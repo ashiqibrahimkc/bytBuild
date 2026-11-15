@@ -165,13 +165,10 @@ export default function Sidebar({
       {/* Navigation Links */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
         {!isMini && (
-          <div className="flex items-center justify-between px-3 pb-1">
+          <div className="px-3 pb-1">
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
               Menu ({visibleNavLinks.length})
             </p>
-            <span className="text-[10px] font-semibold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">
-              {role}
-            </span>
           </div>
         )}
 
@@ -203,7 +200,7 @@ export default function Sidebar({
         <div className={`flex items-center ${isMini ? "justify-center" : "gap-3"}`}>
           <div
             className="w-8 h-8 rounded-full bg-slate-900 text-amber-400 flex items-center justify-center flex-shrink-0 font-bold text-xs shadow-xs"
-            title={`${currentUser?.fullName || userDisplay.name} (${role})`}
+            title={currentUser?.fullName || userDisplay.name}
           >
             {initials}
           </div>
@@ -214,7 +211,7 @@ export default function Sidebar({
               </p>
               <p className="text-[10px] text-slate-500 font-medium truncate flex items-center gap-1">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <strong className="text-slate-700">{role}</strong> • {currentUser?.username || userDisplay.username}
+                {currentUser?.username || userDisplay.username}
               </p>
             </div>
           )}

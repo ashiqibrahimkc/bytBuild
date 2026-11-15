@@ -206,12 +206,6 @@ export default function DashboardPage() {
                 {role.toLowerCase()}
               </span>
             </h1>
-            <Badge
-              variant={role === "OWNER" ? "warning" : role === "ACCOUNTANT" ? "success" : "secondary"}
-              className="text-xs px-2.5 py-1 font-mono font-semibold"
-            >
-              {role === "OWNER" ? "👑 OWNER" : role === "ACCOUNTANT" ? "💼 ACCOUNTANT" : "👷 MANAGER"}
-            </Badge>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             {currentDate} • {role === "ACCOUNTANT" ? "Financial balances, vendor liabilities, payroll settlements, and cash books." : "Construction Cash Flow, Available Liquidity & Multi-Site Ledger."}
