@@ -15,12 +15,10 @@ import {
   Receipt,
   Building2,
   ArrowRight,
-  Activity,
   Layers,
   ClipboardList,
   Plus,
   Zap,
-  Search,
   RefreshCw,
   Landmark,
   Banknote,
@@ -29,7 +27,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { useConstruction } from "@/lib/store";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -41,7 +39,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ActionModals } from "@/components/modals/ActionModals";
-import { Pagination } from "@/components/ui/pagination";
 
 export default function DashboardPage() {
   const [greeting, setGreeting] = useState("Good day");
@@ -95,15 +92,6 @@ export default function DashboardPage() {
   const [openExpense, setOpenExpense] = useState(false);
   const [selectedSiteId, setSelectedSiteId] = useState<string | undefined>(undefined);
 
-  // Pagination for Recent Activity
-  const [activityPage, setActivityPage] = useState(1);
-  const [activityPageSize, setActivityPageSize] = useState(10);
-
-  // Site Table Search & Pagination
-  const [siteSearch, setSiteSearch] = useState("");
-  const [sitePage, setSitePage] = useState(1);
-  const [sitePageSize, setSitePageSize] = useState(10);
-
   const handleSiteAction = (
     siteId: string,
     action: "PURCHASE" | "WORK" | "EXPENSE" | "INCOME"
@@ -115,100 +103,8 @@ export default function DashboardPage() {
     if (action === "INCOME") setOpenIncome(true);
   };
 
-  // ── Recent Activities Ledger ──────────────────────────────────────────
-  const recentActivities = useMemo(() => {
-    return [
-      ...vendorPurchases.map((p) => ({
-        id: p.id,
-        type: "PURCHASE",
-        party: vendors.find((v) => v.id === p.vendorId)?.name ?? "Vendor",
-        site: sites.find((s) => s.id === p.siteId)?.name ?? "—",
-        amount: p.amount,
-        date: p.purchaseDate,
-        voucher: p.voucherNo,
-        isCashOutflow: false,
-        badgeVariant: "warning" as const,
-      })),
-      ...workerWorkLogs.map((w) => ({
-        id: w.id,
-        type: "WAGE LOG",
-        party: workers.find((wk) => wk.id === w.workerId)?.name ?? "Worker",
-        site: sites.find((s) => s.id === w.siteId)?.name ?? "—",
-        amount: w.wageAmount,
-        date: w.workDate,
-        voucher: undefined,
-        isCashOutflow: false,
-        badgeVariant: "secondary" as const,
-      })),
-      ...vendorPayments.map((vp) => ({
-        id: vp.id,
-        type: "VENDOR PAY",
-        party: vendors.find((v) => v.id === vp.vendorId)?.name ?? "Vendor",
-        site: sites.find((s) => s.id === vp.siteId)?.name ?? "General",
-        amount: vp.amount,
-        date: vp.paymentDate,
-        voucher: vp.voucherNo,
-        isCashOutflow: true,
-        badgeVariant: "destructive" as const,
-      })),
-      ...workerPayments.map((wp) => ({
-        id: wp.id,
-        type: "WORKER PAY",
-        party: workers.find((wk) => wk.id === wp.workerId)?.name ?? "Worker",
-        site: "Labor Settlement",
-        amount: wp.amount,
-        date: wp.paymentDate,
-        voucher: wp.voucherNo,
-        isCashOutflow: true,
-        badgeVariant: "destructive" as const,
-      })),
-      ...siteIncomes.map((inc) => ({
-        id: inc.id,
-        type: "CLIENT INCOME",
-        party: inc.receivedFrom ?? "Client",
-        site: sites.find((s) => s.id === inc.siteId)?.name ?? "—",
-        amount: inc.amount,
-        date: inc.incomeDate,
-        voucher: inc.referenceNo,
-        isCashOutflow: false,
-        badgeVariant: "success" as const,
-      })),
-      ...companyExpenses.map((exp) => ({
-        id: exp.id,
-        type: `OVERHEAD (${exp.category.replace("_", " ")})`,
-        party: exp.category.replace("_", " "),
-        site: sites.find((s) => s.id === exp.siteId)?.name ?? "Central",
-        amount: exp.amount,
-        date: exp.expenseDate,
-        voucher: exp.voucherNo,
-        isCashOutflow: true,
-        badgeVariant: "outline" as const,
-      })),
-    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [vendorPurchases, workerWorkLogs, vendorPayments, workerPayments, siteIncomes, companyExpenses, vendors, sites, workers]);
-
-  const paginatedActivities = useMemo(() => {
-    const start = (activityPage - 1) * activityPageSize;
-    return recentActivities.slice(start, start + activityPageSize);
-  }, [recentActivities, activityPage, activityPageSize]);
-
-  // Filtered & Paginated Sites
-  const filteredSites = useMemo(() => {
-    if (!siteSearch.trim()) return sites;
-    const q = siteSearch.toLowerCase();
-    return sites.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.clientName.toLowerCase().includes(q) ||
-        s.location.toLowerCase().includes(q) ||
-        s.status.toLowerCase().includes(q)
-    );
-  }, [sites, siteSearch]);
-
-  const paginatedSites = useMemo(() => {
-    const start = (sitePage - 1) * sitePageSize;
-    return filteredSites.slice(start, start + sitePageSize);
-  }, [filteredSites, sitePage, sitePageSize]);
+  // Preview top 4 sites for dashboard overview
+  const previewSites = useMemo(() => sites.slice(0, 4), [sites]);
 
   // Quick Action cards config
   const quickActions = useMemo(() => {
@@ -571,33 +467,12 @@ export default function DashboardPage() {
       {/* ── Site Performance Table (Hidden for Accountants) ───── */}
       {role !== "ACCOUNTANT" && (
         <section className="space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-amber-500 inline-block" />
               <h2 className="text-sm font-extrabold uppercase tracking-tight text-slate-900 font-mono">
                 Site Performance &amp; Direct Actions ({sites.length} Active Sites)
               </h2>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="relative w-64">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                <Input
-                  placeholder="Search across sites..."
-                  value={siteSearch}
-                  onChange={(e) => {
-                    setSiteSearch(e.target.value);
-                    setSitePage(1);
-                  }}
-                  className="pl-8 h-8 text-xs bg-white border-slate-200"
-                />
-              </div>
-              <Link
-                href="/sites"
-                className="text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline flex items-center gap-1 font-mono shrink-0"
-              >
-                All Sites <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
             </div>
           </div>
 
@@ -605,10 +480,6 @@ export default function DashboardPage() {
             {sites.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 italic">
                 No active construction sites yet. Click &quot;Sites &amp; Clients&quot; in the menu to add your first project.
-              </div>
-            ) : paginatedSites.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400 italic">
-                No sites found matching &quot;{siteSearch}&quot;.
               </div>
             ) : (
               <div>
@@ -629,7 +500,7 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700">
-                      {paginatedSites.map((site) => {
+                      {previewSites.map((site) => {
                         const stats = getSiteStats(site.id);
                         return (
                           <tr
@@ -697,119 +568,24 @@ export default function DashboardPage() {
                   </table>
                 </div>
 
-                <Pagination
-                  currentPage={sitePage}
-                  totalItems={filteredSites.length}
-                  pageSize={sitePageSize}
-                  onPageChange={setSitePage}
-                  onPageSizeChange={setSitePageSize}
-                />
+                {/* Footer replacing pagination with site count and 'All Sites →' button */}
+                <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-slate-200 text-xs text-slate-600">
+                  <span className="font-mono text-[11px] text-slate-500">
+                    Showing <strong className="text-slate-900 font-bold">{previewSites.length}</strong> of{" "}
+                    <strong className="text-slate-900 font-bold">{sites.length}</strong> active sites
+                  </span>
+                  <Link
+                    href="/sites"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-xs font-bold text-slate-800 hover:text-amber-700 shadow-2xs transition-all font-mono"
+                  >
+                    All Sites <ArrowRight className="h-3.5 w-3.5 text-amber-600" />
+                  </Link>
+                </div>
               </div>
             )}
           </div>
         </section>
       )}
-
-      {/* ── Recent Activity Ledger ────────────────────────────────────────── */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-violet-500 inline-block" />
-            <h2 className="text-sm font-extrabold uppercase tracking-tight text-slate-900 dark:text-slate-100 font-mono">
-              Live Transaction Feed (Recent Activities)
-            </h2>
-          </div>
-          <Link
-            href="/cashflow"
-            className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 hover:underline flex items-center gap-1 font-mono"
-          >
-            Full Ledger <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-          {recentActivities.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Activity className="h-8 w-8 text-slate-300 mb-2" />
-              <p className="text-sm font-semibold text-slate-500">No transactions recorded</p>
-            </div>
-          ) : (
-            <div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs md:text-sm">
-                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono border-b border-slate-200 dark:border-slate-800">
-                    <tr>
-                      <th className="py-3 px-4 font-semibold">Date</th>
-                      <th className="py-3 px-4 font-semibold">Type</th>
-                      <th className="py-3 px-4 font-semibold">Party / Detail</th>
-                      <th className="py-3 px-4 font-semibold">Site</th>
-                      <th className="py-3 px-4 font-semibold">Voucher</th>
-                      <th className="py-3 px-4 text-right font-semibold">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-                    {paginatedActivities.map((tx) => (
-                      <tr
-                        key={tx.id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
-                      >
-                        <td className="py-3 px-4 whitespace-nowrap font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                          {formatDate(tx.date)}
-                        </td>
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <Badge
-                            variant={tx.badgeVariant}
-                            className="text-[10px]"
-                          >
-                            {tx.type}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 font-semibold text-slate-900 dark:text-slate-100 max-w-[180px] truncate">
-                          {tx.party}
-                        </td>
-                        <td className="py-3 px-4 text-slate-600 dark:text-slate-400 max-w-[140px] truncate">
-                          {tx.site}
-                        </td>
-                        <td className="py-3 px-4 whitespace-nowrap font-mono text-xs">
-                          {tx.voucher ? (
-                            <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold">
-                              #{tx.voucher}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-right whitespace-nowrap font-mono font-bold">
-                          <span
-                            className={
-                              tx.type === "CLIENT INCOME"
-                                ? "text-emerald-600 dark:text-emerald-400"
-                                : tx.isCashOutflow
-                                  ? "text-rose-600 dark:text-rose-400"
-                                  : "text-slate-900 dark:text-slate-100"
-                            }
-                          >
-                            {tx.type === "CLIENT INCOME" ? "+" : tx.isCashOutflow ? "−" : ""}
-                            {formatCurrency(tx.amount)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <Pagination
-                currentPage={activityPage}
-                totalItems={recentActivities.length}
-                pageSize={activityPageSize}
-                onPageChange={setActivityPage}
-                onPageSizeChange={setActivityPageSize}
-              />
-            </div>
-          )}
-        </div>
-      </section>
 
       {/* ── Company Name Modal ───────────────────────────────────────────── */}
       {isEditingCompany && (
