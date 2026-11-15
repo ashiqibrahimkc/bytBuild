@@ -86,7 +86,7 @@ export default function VendorsPage() {
 
     updateVendor(editingVendor.id, {
       name: editName.trim(),
-      phone: editPhone.trim() || "+91 9800000000",
+      phone: editPhone.trim(),
       tradeCategory: editTradeCategory.trim() || "Materials",
       notes: editNotes.trim(),
     });
@@ -123,6 +123,7 @@ export default function VendorsPage() {
 
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState("");
+  const [siteBreakdownSearch, setSiteBreakdownSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [balanceFilter, setBalanceFilter] = useState<"ALL" | "PENDING" | "SETTLED">("ALL");
   const [sortBy, setSortBy] = useState<"BALANCE_DESC" | "NAME" | "BILLED_DESC">("BALANCE_DESC");
@@ -149,7 +150,7 @@ export default function VendorsPage() {
 
     addVendor({
       name: name.trim(),
-      phone: phone.trim() || "+91 9800000000",
+      phone: phone.trim(),
       tradeCategory: tradeCategory.trim() || "Materials",
       notes: notes.trim(),
     });
@@ -303,7 +304,7 @@ export default function VendorsPage() {
 
   // Site-wise breakdown for selected vendor
   const siteBreakdown = useMemo(() => {
-    return sites
+    const list = sites
       .map((site) => {
         const sitePurchases = filteredPurchases.filter((p) => p.siteId === site.id);
         const siteTotal = sitePurchases.reduce((sum, p) => sum + Number(p.amount), 0);
@@ -314,7 +315,16 @@ export default function VendorsPage() {
         };
       })
       .filter((b) => b.purchases.length > 0);
-  }, [sites, filteredPurchases]);
+
+    if (!siteBreakdownSearch.trim()) return list;
+    const q = siteBreakdownSearch.toLowerCase();
+    return list.filter(
+      (b) =>
+        b.site.name.toLowerCase().includes(q) ||
+        (b.site.clientName && b.site.clientName.toLowerCase().includes(q)) ||
+        (b.site.location && b.site.location.toLowerCase().includes(q))
+    );
+  }, [sites, filteredPurchases, siteBreakdownSearch]);
 
   return (
     <div className="space-y-6">
@@ -322,335 +332,441 @@ export default function VendorsPage() {
       <div className="space-y-6 print:hidden">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20">
-              <Truck className="h-5 w-5" />
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20">
+                <Truck className="h-5 w-5" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Vendors &amp; Material Credit Ledger
+              </h1>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Vendors &amp; Material Credit Ledger
-            </h1>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Track material bills with voucher numbers, credit terms, partial disbursements, and site-wise supply details.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => setIsAddVendorOpen(true)} variant="outline">
-            <Plus className="h-4 w-4 mr-1.5" />
-            New Vendor
-          </Button>
-          <Button
-            onClick={() => {
-              setActionTargetVendorId(undefined);
-              setOpenPurchase(true);
-            }}
-            className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
-          >
-            <Receipt className="h-4 w-4 mr-1.5" />
-            Record Material Bill
-          </Button>
-          <Button
-            onClick={() => {
-              setActionTargetVendorId(undefined);
-              setOpenVendorPay(true);
-            }}
-            variant="success"
-            className="font-bold"
-          >
-            <CreditCard className="h-4 w-4 mr-1.5" />
-            Pay Vendor Bill
-          </Button>
-        </div>
-      </div>
-
-      {/* Top Stats Overview */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-slate-200 border-l-4 border-l-slate-700 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-1 font-semibold">
-            <span>Total Vendors</span>
-            <Truck className="h-4 w-4 text-slate-700" />
-          </div>
-          <div className="text-2xl font-black text-slate-900 font-mono">
-            {overallStats.totalVendors.toLocaleString()}
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1">
-            {overallStats.pendingCount} suppliers currently owed credit
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 border-l-4 border-l-rose-500 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-1 font-semibold">
-            <span>Pending Credit Balance</span>
-            <AlertCircle className="h-4 w-4 text-rose-600" />
-          </div>
-          <div className="text-2xl font-black text-rose-600 font-mono">
-            {formatCurrency(overallStats.totalPending)}
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1">Unsettled vendor material bills</p>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 border-l-4 border-l-blue-500 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-1 font-semibold">
-            <span>Total Material Billed</span>
-            <Receipt className="h-4 w-4 text-blue-600" />
-          </div>
-          <div className="text-2xl font-black text-slate-900 font-mono">
-            {formatCurrency(overallStats.totalBilled)}
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1">Cumulative material vouchers logged</p>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 border-l-4 border-l-emerald-500 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-1 font-semibold">
-            <span>Total Paid to Vendors</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          </div>
-          <div className="text-2xl font-black text-emerald-600 font-mono">
-            {formatCurrency(overallStats.totalPaid)}
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1">Actual bank &amp; cash settlements</p>
-        </div>
-      </div>
-
-      {/* ── Search & Filter Controls ─────────────────────────────────────────── */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Search Box */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <Input
-              type="text"
-              placeholder="Search by vendor name, category, phone, notes..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setRosterPage(1);
-              }}
-              className="pl-9 h-9 text-xs bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400"
-            />
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Track material bills with voucher numbers, credit terms, partial disbursements, and site-wise supply details.
+            </p>
           </div>
 
-          {/* Filters & View Mode */}
           <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={categoryFilter}
-              onChange={(e) => {
-                setCategoryFilter(e.target.value);
-                setRosterPage(1);
+            <Button onClick={() => setIsAddVendorOpen(true)} variant="outline">
+              <Plus className="h-4 w-4 mr-1.5" />
+              New Vendor
+            </Button>
+            <Button
+              onClick={() => {
+                setActionTargetVendorId(undefined);
+                setOpenPurchase(true);
               }}
-              className="h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-800 font-medium focus:outline-hidden"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
             >
-              <option value="ALL">All Material Types ({vendors.length})</option>
-              {distinctCategories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={balanceFilter}
-              onChange={(e) => {
-                setBalanceFilter(e.target.value as any);
-                setRosterPage(1);
+              <Receipt className="h-4 w-4 mr-1.5" />
+              Record Material Bill
+            </Button>
+            <Button
+              onClick={() => {
+                setActionTargetVendorId(undefined);
+                setOpenVendorPay(true);
               }}
-              className="h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-800 font-medium focus:outline-hidden"
+              variant="success"
+              className="font-bold"
             >
-              <option value="ALL">All Balances</option>
-              <option value="PENDING">Credit Owed (&gt; ₹0)</option>
-              <option value="SETTLED">Fully Paid (₹0)</option>
-            </select>
+              <CreditCard className="h-4 w-4 mr-1.5" />
+              Pay Vendor Bill
+            </Button>
+          </div>
+        </div>
 
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-800 font-medium focus:outline-hidden"
-            >
-              <option value="BALANCE_DESC">Highest Credit Owed</option>
-              <option value="BILLED_DESC">Total Billed (High to Low)</option>
-              <option value="NAME">Name (A to Z)</option>
-            </select>
+        {/* Top Stats Overview */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="rounded-xl border border-slate-200 border-l-4 border-l-slate-700 bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1 font-semibold">
+              <span>Total Vendors</span>
+              <Truck className="h-4 w-4 text-slate-700" />
+            </div>
+            <div className="text-2xl font-black text-slate-900 font-mono">
+              {overallStats.totalVendors.toLocaleString()}
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">
+              {overallStats.pendingCount} suppliers currently owed credit
+            </p>
+          </div>
 
-            {/* View Switcher */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setViewMode("TABLE")}
-                className={`p-1.5 rounded transition-colors ${viewMode === "TABLE"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-500 hover:text-slate-800"
-                  }`}
-                title="Table View"
+          <div className="rounded-xl border border-slate-200 border-l-4 border-l-rose-500 bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1 font-semibold">
+              <span>Pending Credit Balance</span>
+              <AlertCircle className="h-4 w-4 text-rose-600" />
+            </div>
+            <div className="text-2xl font-black text-rose-600 font-mono">
+              {formatCurrency(overallStats.totalPending)}
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">Unsettled vendor material bills</p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 border-l-4 border-l-blue-500 bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1 font-semibold">
+              <span>Total Material Billed</span>
+              <Receipt className="h-4 w-4 text-blue-600" />
+            </div>
+            <div className="text-2xl font-black text-slate-900 font-mono">
+              {formatCurrency(overallStats.totalBilled)}
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">Cumulative material vouchers logged</p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 border-l-4 border-l-emerald-500 bg-white p-4 shadow-xs">
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1 font-semibold">
+              <span>Total Paid to Vendors</span>
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            </div>
+            <div className="text-2xl font-black text-emerald-600 font-mono">
+              {formatCurrency(overallStats.totalPaid)}
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">Actual bank &amp; cash settlements</p>
+          </div>
+        </div>
+
+        {/* ── Search & Filter Controls ─────────────────────────────────────────── */}
+        <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 shadow-xs">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            {/* Search Box */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Search by vendor name, category, phone, notes..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setRosterPage(1);
+                }}
+                className="pl-9 h-9 text-xs bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400"
+              />
+            </div>
+
+            {/* Filters & View Mode */}
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={categoryFilter}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  setRosterPage(1);
+                }}
+                className="h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-800 font-medium focus:outline-hidden"
               >
-                <List className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("GRID")}
-                className={`p-1.5 rounded transition-colors ${viewMode === "GRID"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-500 hover:text-slate-800"
-                  }`}
-                title="Card Grid View"
+                <option value="ALL">All Material Types ({vendors.length})</option>
+                {distinctCategories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={balanceFilter}
+                onChange={(e) => {
+                  setBalanceFilter(e.target.value as any);
+                  setRosterPage(1);
+                }}
+                className="h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-800 font-medium focus:outline-hidden"
               >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
+                <option value="ALL">All Balances</option>
+                <option value="PENDING">Credit Owed (&gt; ₹0)</option>
+                <option value="SETTLED">Fully Paid (₹0)</option>
+              </select>
+
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-800 font-medium focus:outline-hidden"
+              >
+                <option value="BALANCE_DESC">Highest Credit Owed</option>
+                <option value="BILLED_DESC">Total Billed (High to Low)</option>
+                <option value="NAME">Name (A to Z)</option>
+              </select>
+
+              {/* View Switcher */}
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("TABLE")}
+                  className={`p-1.5 rounded transition-colors ${viewMode === "TABLE"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  title="Table View"
+                >
+                  <List className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("GRID")}
+                  className={`p-1.5 rounded transition-colors ${viewMode === "GRID"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  title="Card Grid View"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 font-mono">
-          <span>
-            Found <strong>{filteredVendors.length}</strong> matching vendors out of{" "}
-            <strong>{vendors.length}</strong> total
-          </span>
-          {selectedVendorId && (
-            <button
-              onClick={() => setSelectedVendorId("")}
-              className="text-amber-700 hover:underline font-semibold"
-            >
-              ✕ Close Selected Vendor Details
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* ── Empty State ────────────────────────────────────────────────────── */}
-      {vendors.length === 0 ? (
-        <Card className="border-dashed border-2 border-slate-300 p-12 text-center bg-white shadow-xs">
-          <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mx-auto mb-3">
-            <Truck className="h-6 w-6" />
+          <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 font-mono">
+            <span>
+              Found <strong>{filteredVendors.length}</strong> matching vendors out of{" "}
+              <strong>{vendors.length}</strong> total
+            </span>
+            {selectedVendorId && (
+              <button
+                onClick={() => setSelectedVendorId("")}
+                className="text-amber-700 hover:underline font-semibold"
+              >
+                ✕ Close Selected Vendor Details
+              </button>
+            )}
           </div>
-          <h3 className="text-base font-bold text-slate-900">No Vendors Registered Yet</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
-            Click &quot;+ New Vendor&quot; to register material suppliers (Cement, Steel, Bricks, Electrical, etc.).
-          </p>
-          <Button onClick={() => setIsAddVendorOpen(true)} className="bg-amber-600 hover:bg-amber-700">
-            <Plus className="h-4 w-4 mr-1.5" />
-            + Register First Vendor
-          </Button>
-        </Card>
-      ) : paginatedVendors.length === 0 ? (
-        <Card className="p-8 text-center bg-white border-slate-200">
-          <p className="text-xs text-slate-400 italic">
-            No vendors match &quot;{searchTerm}&quot; with selected filters.
-          </p>
-        </Card>
-      ) : viewMode === "TABLE" ? (
-        /* ── TABLE VIEW ──────────────────────────────────────────────────── */
-        <Card className="border-slate-200 bg-white shadow-xs overflow-hidden">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs md:text-sm">
-                <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-600 font-mono border-b border-slate-200">
-                  <tr>
-                    <th className="py-3 px-4 font-semibold">Vendor Name</th>
-                    <th className="py-3 px-4 font-semibold">Material Category</th>
-                    <th className="py-3 px-4 font-semibold">Phone Number</th>
-                    <th className="py-3 px-4 text-right font-semibold">Total Billed</th>
-                    <th className="py-3 px-4 text-right font-semibold">Total Paid</th>
-                    <th className="py-3 px-4 text-right font-semibold">Credit Balance Owed</th>
-                    <th className="py-3 px-4 text-right font-semibold">Direct Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {paginatedVendors.map((vendor) => {
-                    const stats = getVendorStats(vendor.id);
-                    const isSelected = vendor.id === selectedVendorId;
+        </div>
 
-                    return (
-                      <tr
-                        key={vendor.id}
-                        onClick={() => setSelectedVendorId(vendor.id)}
-                        className={`cursor-pointer transition-colors ${isSelected ? "bg-amber-50/70 font-semibold" : "hover:bg-amber-50/30"
-                          }`}
-                      >
-                        <td className="py-3 px-4 whitespace-nowrap font-bold text-slate-900">
-                          {vendor.name}
-                        </td>
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-700">
-                            {vendor.tradeCategory || "Materials"}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 whitespace-nowrap font-mono text-xs text-slate-500">
-                          {vendor.phone}
-                        </td>
-                        <td className="py-3 px-4 text-right whitespace-nowrap font-mono text-slate-700">
-                          {formatCurrency(stats.totalPurchased)}
-                        </td>
-                        <td className="py-3 px-4 text-right whitespace-nowrap font-mono text-emerald-600 font-semibold">
-                          {formatCurrency(stats.totalPaid)}
-                        </td>
-                        <td className="py-3 px-4 text-right whitespace-nowrap font-mono font-bold">
+        {/* ── Empty State ────────────────────────────────────────────────────── */}
+        {vendors.length === 0 ? (
+          <Card className="border-dashed border-2 border-slate-300 p-12 text-center bg-white shadow-xs">
+            <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mx-auto mb-3">
+              <Truck className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">No Vendors Registered Yet</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
+              Click &quot;+ New Vendor&quot; to register material suppliers (Cement, Steel, Bricks, Electrical, etc.).
+            </p>
+            <Button onClick={() => setIsAddVendorOpen(true)} className="bg-amber-600 hover:bg-amber-700">
+              <Plus className="h-4 w-4 mr-1.5" />
+              + Register First Vendor
+            </Button>
+          </Card>
+        ) : paginatedVendors.length === 0 ? (
+          <Card className="p-8 text-center bg-white border-slate-200">
+            <p className="text-xs text-slate-400 italic">
+              No vendors match &quot;{searchTerm}&quot; with selected filters.
+            </p>
+          </Card>
+        ) : viewMode === "TABLE" ? (
+          /* ── TABLE VIEW ──────────────────────────────────────────────────── */
+          <Card className="border-slate-200 bg-white shadow-xs overflow-hidden">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs md:text-sm">
+                  <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-600 font-mono border-b border-slate-200">
+                    <tr>
+                      <th className="py-3 px-4 font-semibold">Vendor Name</th>
+                      <th className="py-3 px-4 font-semibold">Material Category</th>
+                      <th className="py-3 px-4 font-semibold">Phone Number</th>
+                      <th className="py-3 px-4 text-right font-semibold">Total Billed</th>
+                      <th className="py-3 px-4 text-right font-semibold">Total Paid</th>
+                      <th className="py-3 px-4 text-right font-semibold">Credit Balance Owed</th>
+                      <th className="py-3 px-4 text-right font-semibold">Direct Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {paginatedVendors.map((vendor) => {
+                      const stats = getVendorStats(vendor.id);
+                      const isSelected = vendor.id === selectedVendorId;
+
+                      return (
+                        <tr
+                          key={vendor.id}
+                          onClick={() => setSelectedVendorId(vendor.id)}
+                          className={`cursor-pointer transition-colors ${isSelected ? "bg-amber-50/70 font-semibold" : "hover:bg-amber-50/30"
+                            }`}
+                        >
+                          <td className="py-3 px-4 whitespace-nowrap font-bold text-slate-900">
+                            {vendor.name}
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-700">
+                              {vendor.tradeCategory || "Materials"}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap font-mono text-xs text-slate-500">
+                            {vendor.phone}
+                          </td>
+                          <td className="py-3 px-4 text-right whitespace-nowrap font-mono text-slate-700">
+                            {formatCurrency(stats.totalPurchased)}
+                          </td>
+                          <td className="py-3 px-4 text-right whitespace-nowrap font-mono text-emerald-600 font-semibold">
+                            {formatCurrency(stats.totalPaid)}
+                          </td>
+                          <td className="py-3 px-4 text-right whitespace-nowrap font-mono font-bold">
+                            <span
+                              className={`px-2 py-0.5 rounded text-xs ${stats.outstandingBalance > 0
+                                ? "bg-rose-100 text-rose-800 border border-rose-200"
+                                : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                }`}
+                            >
+                              {formatCurrency(stats.outstandingBalance)}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-[11px] px-2 border-slate-200 text-slate-700 hover:bg-slate-100"
+                                onClick={() => setSelectedVendorId(vendor.id)}
+                              >
+                                <Eye className="h-3 w-3 mr-1 text-slate-500" />
+                                Ledger
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="h-7 text-[11px] px-2 bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                                onClick={() => {
+                                  setActionTargetVendorId(vendor.id);
+                                  setOpenPurchase(true);
+                                }}
+                              >
+                                + Bill
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="success"
+                                className="h-7 text-[11px] px-2 font-bold"
+                                onClick={() => {
+                                  setActionTargetVendorId(vendor.id);
+                                  setOpenVendorPay(true);
+                                }}
+                              >
+                                Pay
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-[11px] px-2 text-slate-700 hover:text-amber-700 hover:border-amber-300"
+                                onClick={() => openEditModal(vendor)}
+                                title="Edit Vendor Details"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-[11px] px-2 text-rose-600 hover:bg-rose-50 hover:border-rose-300"
+                                onClick={() => openDeleteModal(vendor)}
+                                title="Delete Vendor"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <Pagination
+                currentPage={rosterPage}
+                totalItems={filteredVendors.length}
+                pageSize={rosterPageSize}
+                onPageChange={setRosterPage}
+                onPageSizeChange={setRosterPageSize}
+              />
+            </CardContent>
+          </Card>
+        ) : (
+          /* ── GRID VIEW ───────────────────────────────────────────────────── */
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {paginatedVendors.map((vendor) => {
+                const stats = getVendorStats(vendor.id);
+                const isSelected = vendor.id === selectedVendorId;
+
+                return (
+                  <div
+                    key={vendor.id}
+                    onClick={() => setSelectedVendorId(vendor.id)}
+                    className={`rounded-xl border p-4 cursor-pointer transition-all ${isSelected
+                      ? "border-amber-500 bg-amber-50/50 shadow-md ring-2 ring-amber-500/20"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs"
+                      }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">{vendor.name}</h3>
+                        <Badge variant="outline" className="mt-1 text-[10px] bg-slate-50">
+                          {vendor.tradeCategory || "Supplier"}
+                        </Badge>
+                        <p className="text-[11px] font-mono text-slate-400 mt-1">{vendor.phone}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(vendor)}
+                            className="p-1 rounded text-slate-400 hover:text-amber-700 hover:bg-amber-100/60 transition-colors"
+                            title="Edit Vendor Details"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openDeleteModal(vendor)}
+                            className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-100/60 transition-colors"
+                            title="Delete Vendor"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 block font-medium">Balance Owed</span>
                           <span
-                            className={`px-2 py-0.5 rounded text-xs ${stats.outstandingBalance > 0
-                              ? "bg-rose-100 text-rose-800 border border-rose-200"
-                              : "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                            className={`text-base font-black ${stats.outstandingBalance > 0 ? "text-rose-600" : "text-emerald-600"
                               }`}
                           >
                             {formatCurrency(stats.outstandingBalance)}
                           </span>
-                        </td>
-                        <td className="py-2.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1.5">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px] px-2 border-slate-200 text-slate-700 hover:bg-slate-100"
-                              onClick={() => setSelectedVendorId(vendor.id)}
-                            >
-                              <Eye className="h-3 w-3 mr-1 text-slate-500" />
-                              Ledger
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="h-7 text-[11px] px-2 bg-amber-600 hover:bg-amber-700 text-white font-bold"
-                              onClick={() => {
-                                setActionTargetVendorId(vendor.id);
-                                setOpenPurchase(true);
-                              }}
-                            >
-                              + Bill
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="success"
-                              className="h-7 text-[11px] px-2 font-bold"
-                              onClick={() => {
-                                setActionTargetVendorId(vendor.id);
-                                setOpenVendorPay(true);
-                              }}
-                            >
-                              Pay
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px] px-2 text-slate-700 hover:text-amber-700 hover:border-amber-300"
-                              onClick={() => openEditModal(vendor)}
-                              title="Edit Vendor Details"
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px] px-2 text-rose-600 hover:bg-rose-50 hover:border-rose-300"
-                              onClick={() => openDeleteModal(vendor)}
-                              title="Delete Vendor"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                      <span>Billed: {formatCurrency(stats.totalPurchased)}</span>
+                      <span>Paid: {formatCurrency(stats.totalPaid)}</span>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 h-7 text-[11px]"
+                        onClick={() => setSelectedVendorId(vendor.id)}
+                      >
+                        View Details
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 h-7 text-[11px] bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                        onClick={() => {
+                          setActionTargetVendorId(vendor.id);
+                          setOpenPurchase(true);
+                        }}
+                      >
+                        + Bill
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="success"
+                        className="flex-1 h-7 text-[11px] font-bold"
+                        onClick={() => {
+                          setActionTargetVendorId(vendor.id);
+                          setOpenVendorPay(true);
+                        }}
+                      >
+                        Pay
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <Pagination
@@ -660,114 +776,8 @@ export default function VendorsPage() {
               onPageChange={setRosterPage}
               onPageSizeChange={setRosterPageSize}
             />
-          </CardContent>
-        </Card>
-      ) : (
-        /* ── GRID VIEW ───────────────────────────────────────────────────── */
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {paginatedVendors.map((vendor) => {
-              const stats = getVendorStats(vendor.id);
-              const isSelected = vendor.id === selectedVendorId;
-
-              return (
-                <div
-                  key={vendor.id}
-                  onClick={() => setSelectedVendorId(vendor.id)}
-                  className={`rounded-xl border p-4 cursor-pointer transition-all ${isSelected
-                    ? "border-amber-500 bg-amber-50/50 shadow-md ring-2 ring-amber-500/20"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs"
-                    }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-base">{vendor.name}</h3>
-                      <Badge variant="outline" className="mt-1 text-[10px] bg-slate-50">
-                        {vendor.tradeCategory || "Supplier"}
-                      </Badge>
-                      <p className="text-[11px] font-mono text-slate-400 mt-1">{vendor.phone}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(vendor)}
-                          className="p-1 rounded text-slate-400 hover:text-amber-700 hover:bg-amber-100/60 transition-colors"
-                          title="Edit Vendor Details"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openDeleteModal(vendor)}
-                          className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-100/60 transition-colors"
-                          title="Delete Vendor"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-slate-400 block font-medium">Balance Owed</span>
-                        <span
-                          className={`text-base font-black ${stats.outstandingBalance > 0 ? "text-rose-600" : "text-emerald-600"
-                            }`}
-                        >
-                          {formatCurrency(stats.outstandingBalance)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                    <span>Billed: {formatCurrency(stats.totalPurchased)}</span>
-                    <span>Paid: {formatCurrency(stats.totalPaid)}</span>
-                  </div>
-
-                  <div className="mt-3 flex items-center gap-2 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 h-7 text-[11px]"
-                      onClick={() => setSelectedVendorId(vendor.id)}
-                    >
-                      View Details
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="flex-1 h-7 text-[11px] bg-amber-600 hover:bg-amber-700 text-white font-bold"
-                      onClick={() => {
-                        setActionTargetVendorId(vendor.id);
-                        setOpenPurchase(true);
-                      }}
-                    >
-                      + Bill
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="success"
-                      className="flex-1 h-7 text-[11px] font-bold"
-                      onClick={() => {
-                        setActionTargetVendorId(vendor.id);
-                        setOpenVendorPay(true);
-                      }}
-                    >
-                      Pay
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
           </div>
-
-          <Pagination
-            currentPage={rosterPage}
-            totalItems={filteredVendors.length}
-            pageSize={rosterPageSize}
-            onPageChange={setRosterPage}
-            onPageSizeChange={setRosterPageSize}
-          />
-        </div>
-      )}
+        )}
       </div>
 
       {/* ── Selected Vendor Deep Dive ────────────────────────────────────────── */}
@@ -934,34 +944,57 @@ export default function VendorsPage() {
 
             {/* Site Breakdown Cards */}
             <CardContent className="p-4 sm:p-6 space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 font-mono">
-                Site-Wise Material Supply Breakdown
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 font-mono">
+                    Site-Wise Material Supply Breakdown
+                  </h3>
+                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                    {siteBreakdown.length} {siteBreakdown.length === 1 ? "Site" : "Sites"}
+                  </span>
+                </div>
+                <div className="relative w-full sm:w-64 print:hidden">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <Input
+                    placeholder="Search site or client..."
+                    value={siteBreakdownSearch}
+                    onChange={(e) => setSiteBreakdownSearch(e.target.value)}
+                    className="pl-8 h-8 text-xs bg-white border-slate-200"
+                  />
+                </div>
+              </div>
+
               {siteBreakdown.length === 0 ? (
-                <p className="text-xs text-slate-400 italic">No site-allocated material purchases recorded yet.</p>
+                <p className="text-xs text-slate-400 italic">
+                  {siteBreakdownSearch.trim()
+                    ? `No supply sites found matching "${siteBreakdownSearch}".`
+                    : "No site-allocated material purchases recorded yet."}
+                </p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {siteBreakdown.map(({ site, purchases, total }) => (
-                    <div key={site.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900 text-xs sm:text-sm">{site.name}</span>
-                        <span className="font-mono font-bold text-slate-900 text-xs">{formatCurrency(total)}</span>
+                <div className="max-h-[380px] overflow-y-auto pr-1.5 scrollbar-thin print:max-h-none print:overflow-visible">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {siteBreakdown.map(({ site, purchases, total }) => (
+                      <div key={site.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900 text-xs sm:text-sm">{site.name}</span>
+                          <span className="font-mono font-bold text-slate-900 text-xs">{formatCurrency(total)}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {purchases.length} bill(s) logged for client: <strong>{site.clientName}</strong>
+                        </div>
+                        <div className="space-y-1 pt-1 border-t border-slate-200 max-h-28 overflow-y-auto pr-1">
+                          {purchases.map((p) => (
+                            <div key={p.id} className="flex items-center justify-between text-[11px] font-mono">
+                              <span className="text-slate-500">
+                                {formatDate(p.purchaseDate)} {p.voucherNo ? `(Voucher #${p.voucherNo})` : ""}
+                              </span>
+                              <span className="font-semibold text-slate-800">{formatCurrency(p.amount)}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-slate-500">
-                        {purchases.length} bill(s) logged for client: <strong>{site.clientName}</strong>
-                      </div>
-                      <div className="space-y-1 pt-1 border-t border-slate-200">
-                        {purchases.map((p) => (
-                          <div key={p.id} className="flex items-center justify-between text-[11px] font-mono">
-                            <span className="text-slate-500">
-                              {formatDate(p.purchaseDate)} {p.voucherNo ? `(Voucher #${p.voucherNo})` : ""}
-                            </span>
-                            <span className="font-semibold text-slate-800">{formatCurrency(p.amount)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
 
