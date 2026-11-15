@@ -13,7 +13,6 @@ import {
   ShieldAlert,
   Fuel,
   Receipt,
-  Building2,
   ArrowRight,
   Layers,
   ClipboardList,
@@ -24,7 +23,6 @@ import {
   Banknote,
   ShieldCheck,
   CheckCircle2,
-  Pencil,
 } from "lucide-react";
 import { useConstruction } from "@/lib/store";
 import { formatCurrency } from "@/lib/utils";
@@ -37,7 +35,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { ActionModals } from "@/components/modals/ActionModals";
 
 export default function DashboardPage() {
@@ -78,10 +75,6 @@ export default function DashboardPage() {
   } = useConstruction();
 
   const cashFlow = getMasterCashFlow();
-
-  // Company Name editor
-  const [isEditingCompany, setIsEditingCompany] = useState(false);
-  const [newCompanyName, setNewCompanyName] = useState(companyName);
 
   // Modal state
   const [openPurchase, setOpenPurchase] = useState(false);
@@ -209,37 +202,20 @@ export default function DashboardPage() {
           <div className="flex items-center flex-wrap gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
               {greeting},{" "}
-              <span className="text-amber-600">
-                {companyName}
+              <span className="text-amber-600 capitalize">
+                {role.toLowerCase()}
               </span>
             </h1>
-            {role === "OWNER" && (
-              <button
-                type="button"
-                onClick={() => {
-                  setNewCompanyName(companyName);
-                  setIsEditingCompany(true);
-                }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-700 hover:text-amber-700 hover:border-amber-400 hover:bg-amber-50/70 shadow-2xs transition-all cursor-pointer"
-                title="Edit Company Name"
-              >
-                <Pencil className="h-3 w-3 text-amber-600" />
-                <span>Edit Company Name</span>
-              </button>
-            )}
+            <Badge
+              variant={role === "OWNER" ? "warning" : role === "ACCOUNTANT" ? "success" : "secondary"}
+              className="text-xs px-2.5 py-1 font-mono font-semibold"
+            >
+              {role === "OWNER" ? "👑 OWNER" : role === "ACCOUNTANT" ? "💼 ACCOUNTANT" : "👷 MANAGER"}
+            </Badge>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             {currentDate} • {role === "ACCOUNTANT" ? "Financial balances, vendor liabilities, payroll settlements, and cash books." : "Construction Cash Flow, Available Liquidity & Multi-Site Ledger."}
           </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Badge
-            variant={role === "OWNER" ? "warning" : role === "ACCOUNTANT" ? "success" : "secondary"}
-            className="text-xs px-2.5 py-1 font-mono font-semibold"
-          >
-            {role === "OWNER" ? "👑 OWNER" : role === "ACCOUNTANT" ? "💼 ACCOUNTANT" : "👷 MANAGER"}
-          </Badge>
         </div>
       </div>
 
@@ -587,68 +563,7 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* ── Company Name Modal ───────────────────────────────────────────── */}
-      {isEditingCompany && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-amber-100 text-amber-700 shadow-xs">
-                  <Building2 className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base">Set Company Name</h3>
-                  <p className="text-xs text-slate-500">Appears on dashboard greeting and all financial reports</p>
-                </div>
-              </div>
-            </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (newCompanyName.trim()) {
-                  setCompanyName(newCompanyName.trim());
-                  setIsEditingCompany(false);
-                }
-              }}
-              className="space-y-4"
-            >
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">Company / Enterprise Name</label>
-                <Input
-                  value={newCompanyName}
-                  onChange={(e) => setNewCompanyName(e.target.value)}
-                  placeholder="e.g. BytBuild Constructions Pvt Ltd"
-                  required
-                  autoFocus
-                  className="h-10 text-sm"
-                />
-                <div className="rounded-lg bg-amber-50/70 border border-amber-200 p-2.5 text-[11px] text-amber-900">
-                  <span className="font-semibold">Live Preview:</span> &ldquo;{greeting}, {newCompanyName || "Company Name"}&rdquo;
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditingCompany(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold cursor-pointer"
-                >
-                  Save Company Name
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ── Action Modals ─────────────────────────────────────────────────── */}
       <ActionModals
