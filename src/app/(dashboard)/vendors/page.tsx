@@ -539,7 +539,7 @@ export default function VendorsPage() {
             </p>
             <Button onClick={() => setIsAddVendorOpen(true)} className="bg-amber-600 hover:bg-amber-700">
               <Plus className="h-4 w-4 mr-1.5" />
-              + Register First Vendor
+              Register First Vendor
             </Button>
           </Card>
         ) : paginatedVendors.length === 0 ? (

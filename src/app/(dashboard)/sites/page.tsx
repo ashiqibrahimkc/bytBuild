@@ -429,7 +429,7 @@ export default function SitesPage() {
             </p>
             <Button onClick={() => setIsAddSiteOpen(true)} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
               <Plus className="h-4 w-4 mr-1.5" />
-              + Create First Site
+              Create First Site
             </Button>
           </Card>
         ) : paginatedSites.length === 0 ? (

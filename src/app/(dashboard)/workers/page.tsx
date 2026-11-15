@@ -571,7 +571,7 @@ export default function WorkersPage() {
             </p>
             <Button onClick={() => setIsAddWorkerOpen(true)} className="bg-amber-600 hover:bg-amber-700">
               <Plus className="h-4 w-4 mr-1.5" />
-              + Register First Worker
+              Register First Worker
             </Button>
           </Card>
         ) : paginatedWorkers.length === 0 ? (
