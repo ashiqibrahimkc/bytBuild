@@ -15,7 +15,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     try {
       const saved = localStorage.getItem("sidebar_collapsed");
       if (saved !== null) setIsCollapsed(saved === "true");
-    } catch {}
+    } catch { }
   }, []);
 
   const handleToggleCollapse = () => {
@@ -23,7 +23,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       const next = !prev;
       try {
         localStorage.setItem("sidebar_collapsed", String(next));
-      } catch {}
+      } catch { }
       return next;
     });
   };
@@ -39,9 +39,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       />
 
       <div
-        className={`flex flex-col flex-1 ${
-          isCollapsed ? "lg:pl-20" : "lg:pl-64"
-        } min-w-0 transition-all duration-300 ease-in-out print:pl-0 print:m-0`}
+        className={`flex flex-col flex-1 ${isCollapsed ? "lg:pl-20" : "lg:pl-64"
+          } min-w-0 transition-all duration-300 ease-in-out print:pl-0 print:m-0`}
       >
         {/* Top Header Bar */}
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200 bg-white/95 px-4 sm:px-6 backdrop-blur-md print:hidden">

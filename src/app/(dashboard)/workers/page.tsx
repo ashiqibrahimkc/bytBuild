@@ -84,7 +84,7 @@ export default function WorkersPage() {
 
     updateWorker(editingWorker.id, {
       name: editName.trim(),
-      phone: editPhone.trim() || "+91 9800000000",
+      phone: editPhone.trim(),
       trade: editTrade.trim() || "Laborer",
       compensationType: editCompensationType,
       defaultDailyWage: editCompensationType === "DAILY_WAGE" ? (parseFloat(editDefaultWage) || 0) : 0,
@@ -152,10 +152,10 @@ export default function WorkersPage() {
   // New Worker Form
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [trade, setTrade] = useState("Head Mason");
+  const [trade, setTrade] = useState("Mason");
   const [compensationType, setCompensationType] = useState<WorkerCompensationType>("DAILY_WAGE");
-  const [defaultWage, setDefaultWage] = useState("950");
-  const [monthlySalary, setMonthlySalary] = useState("35000");
+  const [defaultWage, setDefaultWage] = useState("");
+  const [monthlySalary, setMonthlySalary] = useState("");
 
   const handleCreateWorker = (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,7 +163,7 @@ export default function WorkersPage() {
 
     addWorker({
       name: name.trim(),
-      phone: phone.trim() || "+91 9800000000",
+      phone: phone.trim(),
       trade: trade.trim() || "Labor",
       compensationType,
       defaultDailyWage: compensationType === "DAILY_WAGE" ? (parseFloat(defaultWage) || 0) : 0,

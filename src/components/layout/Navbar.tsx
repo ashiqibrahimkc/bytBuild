@@ -62,11 +62,10 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-amber-50 text-amber-700 font-semibold"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive
+                  ? "bg-amber-50 text-amber-700 font-semibold"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
               >
                 <Icon className={`h-4 w-4 ${isActive ? "text-amber-600" : "text-slate-400"}`} />
                 {link.label}
@@ -80,11 +79,10 @@ export function Navbar() {
           <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
             <button
               onClick={() => setRole("OWNER")}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                role === "OWNER"
-                  ? "bg-amber-600 text-white shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${role === "OWNER"
+                ? "bg-amber-600 text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+                }`}
               title="Full Financial Authority, Bank Balances, Client Income"
             >
               <ShieldCheck className="h-3.5 w-3.5" />
@@ -92,11 +90,10 @@ export function Navbar() {
             </button>
             <button
               onClick={() => setRole("MANAGER")}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                role === "MANAGER"
-                  ? "bg-slate-800 text-white shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${role === "MANAGER"
+                ? "bg-slate-800 text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+                }`}
               title="Site Operations, Expense Logging, Worker Attendance"
             >
               <UserCheck className="h-3.5 w-3.5" />
@@ -141,11 +138,10 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
-                  isActive
-                    ? "bg-amber-50 text-amber-700 font-semibold"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${isActive
+                  ? "bg-amber-50 text-amber-700 font-semibold"
+                  : "text-slate-600 hover:bg-slate-50"
+                  }`}
               >
                 <Icon className={`h-5 w-5 ${isActive ? "text-amber-600" : "text-slate-400"}`} />
                 {link.label}
@@ -157,17 +153,15 @@ export function Navbar() {
             <div className="flex gap-1">
               <button
                 onClick={() => setRole("OWNER")}
-                className={`px-3 py-1 rounded text-xs font-bold ${
-                  role === "OWNER" ? "bg-amber-600 text-white" : "bg-slate-100 text-slate-600"
-                }`}
+                className={`px-3 py-1 rounded text-xs font-bold ${role === "OWNER" ? "bg-amber-600 text-white" : "bg-slate-100 text-slate-600"
+                  }`}
               >
                 Owner
               </button>
               <button
                 onClick={() => setRole("MANAGER")}
-                className={`px-3 py-1 rounded text-xs font-bold ${
-                  role === "MANAGER" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600"
-                }`}
+                className={`px-3 py-1 rounded text-xs font-bold ${role === "MANAGER" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600"
+                  }`}
               >
                 Manager
               </button>

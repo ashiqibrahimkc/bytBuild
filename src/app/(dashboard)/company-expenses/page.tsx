@@ -526,7 +526,7 @@ export default function CompanyExpensesPage() {
                 Company Operational Overhead &amp; Expense Register
               </p>
               <p className="text-[10px] text-slate-500 font-mono">
-                GSTIN / Reg: 33AAAAA0000A1Z5 • Financial ERP Register
+                Tax &amp; Compliance Verified • Financial ERP Register
               </p>
             </div>
           </div>
