@@ -62,7 +62,31 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    // 1. Check dynamically registered user accounts (No hardcoded accounts)
+    // 1. Authenticate with server database API (Prisma / Supabase PostgreSQL seeded users)
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          await completeLogin(
+            data.user.username,
+            data.user.fullName,
+            data.user.email,
+            data.user.role
+          );
+          return;
+        }
+      }
+    } catch {
+      // Fallback to local / client checks if offline
+    }
+
+    // 2. Check dynamically registered user accounts in browser
     let usersList: Array<{
       username: string;
       password?: string;

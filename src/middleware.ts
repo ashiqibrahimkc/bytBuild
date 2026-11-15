@@ -51,6 +51,10 @@ export async function middleware(request: NextRequest) {
 
       if (user) {
         isAuthenticated = true;
+      } else {
+        // Fall back to session cookie for database authenticated accounts
+        isAuthenticated =
+          request.cookies.has("bytbuild_session") || request.cookies.has("buildflow_session");
       }
     } catch {
       // In case of network / URL issues, fall back to cookie check
