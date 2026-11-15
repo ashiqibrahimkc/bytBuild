@@ -164,13 +164,6 @@ export default function Sidebar({
 
       {/* Navigation Links */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
-        {!isMini && (
-          <div className="px-3 pb-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-              Menu ({visibleNavLinks.length})
-            </p>
-          </div>
-        )}
 
         {visibleNavLinks.map(({ href, label, icon: Icon }) => {
           const active = isActive(href);
