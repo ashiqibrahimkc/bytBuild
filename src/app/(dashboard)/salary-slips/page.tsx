@@ -462,13 +462,7 @@ function SalarySlipsContent() {
           </Card>
         </div>
 
-        {/* ── Policy Guidance Banner ────────────────────────────────────────── */}
-        <div className="rounded-xl bg-amber-50/70 border border-amber-200/80 p-4 flex items-start gap-3 text-xs text-amber-900">
-          <Sparkles className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold">Strict 1-Time Slip Generation Protocol:</span> Each monthly salaried worker is entitled to exactly <strong>one</strong> official pay slip per calendar month. When you generate a salary slip, any advances logged in <em>Company Expenses</em> under <strong>&quot;Salary Advance&quot;</strong> for that worker in that month are automatically deducted (`Gross Salary - Advance = Net Balance Payable`). The slip is certified, locked, and cannot be duplicated.
-          </div>
-        </div>
+
 
         {/* ── Navigation Tabs & Search ──────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">

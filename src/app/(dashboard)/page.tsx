@@ -282,16 +282,16 @@ export default function DashboardPage() {
       },
       ...(role === "OWNER"
         ? [
-            {
-              label: "Record Client Income",
-              desc: "Log advance or milestone collection",
-              icon: IndianRupee,
-              iconBg: "bg-emerald-100",
-              iconColor: "text-emerald-700",
-              border: "border-l-emerald-500",
-              onClick: () => setOpenIncome(true),
-            },
-          ]
+          {
+            label: "Record Client Income",
+            desc: "Log advance or milestone collection",
+            icon: IndianRupee,
+            iconBg: "bg-emerald-100",
+            iconColor: "text-emerald-700",
+            border: "border-l-emerald-500",
+            onClick: () => setOpenIncome(true),
+          },
+        ]
         : []),
       {
         label: "Log Overhead / Petrol",
@@ -404,9 +404,7 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <p className="text-xs text-slate-300 mt-2 max-w-xl">
-                Net liquid money remaining across company accounts after paying all vendor material settlements, worker wage disbursements, and overhead expenses (room rent, petrol, mess).
-              </p>
+
             </div>
 
             {/* Right: Liquidity Vault Distribution (Bank vs Cash Box) */}
@@ -530,9 +528,9 @@ export default function DashboardPage() {
             <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
               {role === "OWNER"
                 ? formatCurrency(
-                    cashFlow.currentCashInHand -
-                      (cashFlow.totalVendorPayables + cashFlow.totalWorkerPayables)
-                  )
+                  cashFlow.currentCashInHand -
+                  (cashFlow.totalVendorPayables + cashFlow.totalWorkerPayables)
+                )
                 : "••••••••••"}
             </div>
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400 font-mono">
@@ -544,31 +542,27 @@ export default function DashboardPage() {
 
       {/* ── Quick Actions ─────────────────────────────────────────────────── */}
       <section>
-        <div className="flex items-center gap-2 mb-3">
-          <span className="h-2.5 w-2.5 rounded-full bg-blue-500 inline-block" />
-          <h2 className="text-sm font-extrabold uppercase tracking-tight text-slate-900 dark:text-slate-100 font-mono">
+        <div className="flex items-center gap-2 mb-2.5">
+          <span className="h-2 w-2 rounded-full bg-blue-500 inline-block" />
+          <h2 className="text-xs font-extrabold uppercase tracking-tight text-slate-700 font-mono">
             Direct Financial Actions
           </h2>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
-              <button
+              <Button
                 key={action.label}
                 onClick={action.onClick}
-                className={`group text-left rounded-xl border border-slate-200 ${action.border} border-l-4 bg-white p-3 shadow-sm hover:shadow-md transition-all cursor-pointer`}
+                variant="outline"
+                size="sm"
+                title={action.desc}
+                className="h-8 px-3 text-xs font-medium gap-1.5 border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 hover:text-slate-900 shadow-2xs cursor-pointer"
               >
-                <div className={`rounded-lg ${action.iconBg} p-2 w-fit mb-2 ${action.iconColor}`}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <p className="text-xs font-bold text-slate-900 leading-tight group-hover:text-amber-600 transition-colors">
-                  {action.label}
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">
-                  {action.desc}
-                </p>
-              </button>
+                <Icon className={`h-3.5 w-3.5 ${action.iconColor}`} />
+                <span>{action.label}</span>
+              </Button>
             );
           })}
         </div>
@@ -652,8 +646,8 @@ export default function DashboardPage() {
                                   site.status === "ACTIVE"
                                     ? "success"
                                     : site.status === "COMPLETED"
-                                    ? "default"
-                                    : "warning"
+                                      ? "default"
+                                      : "warning"
                                 }
                                 className="text-[10px]"
                               >
@@ -791,8 +785,8 @@ export default function DashboardPage() {
                               tx.type === "CLIENT INCOME"
                                 ? "text-emerald-600 dark:text-emerald-400"
                                 : tx.isCashOutflow
-                                ? "text-rose-600 dark:text-rose-400"
-                                : "text-slate-900 dark:text-slate-100"
+                                  ? "text-rose-600 dark:text-rose-400"
+                                  : "text-slate-900 dark:text-slate-100"
                             }
                           >
                             {tx.type === "CLIENT INCOME" ? "+" : tx.isCashOutflow ? "−" : ""}
