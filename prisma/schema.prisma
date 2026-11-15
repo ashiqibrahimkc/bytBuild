@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -26,7 +27,13 @@ enum SiteStatus {
   ON_HOLD
 }
 
+enum WorkerCompensationType {
+  DAILY_WAGE
+  MONTHLY_SALARY
+}
+
 enum ExpenseCategory {
+  SALARY_ADVANCE
   ROOM_RENT
   PETROL_FUEL
   FUEL_TRAVEL
@@ -171,17 +178,21 @@ model VendorPayment {
 }
 
 model Worker {
-  id               String   @id @default(uuid())
+  id               String                 @id @default(uuid())
   name             String
   phone            String?
-  trade            String? // e.g., 'Mason', 'Helper', 'Carpenter'
-  defaultDailyWage Decimal  @default(0.00) @db.Decimal(10, 2)
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  trade            String? // e.g., 'Mason', 'Helper', 'Carpenter', 'Engineer'
+  compensationType WorkerCompensationType @default(DAILY_WAGE)
+  defaultDailyWage Decimal                @default(0.00) @db.Decimal(10, 2)
+  monthlySalary    Decimal?               @db.Decimal(10, 2)
+  isActive         Boolean                @default(true)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
 
-  workLogs WorkerWorkLog[]
-  payments WorkerPayment[]
+  workLogs        WorkerWorkLog[]
+  payments        WorkerPayment[]
+  salarySlips     SalarySlip[]
+  companyExpenses CompanyExpense[]
 }
 
 model WorkerWorkLog {
@@ -241,6 +252,7 @@ model SiteIncome {
 model CompanyExpense {
   id          String          @id @default(uuid())
   siteId      String?
+  workerId    String?
   category    ExpenseCategory @default(MISCELLANEOUS)
   expenseDate DateTime        @default(now())
   amount      Decimal         @db.Decimal(12, 2)
@@ -250,9 +262,35 @@ model CompanyExpense {
   createdById String?
   createdAt   DateTime        @default(now())
 
-  site      Site? @relation(fields: [siteId], references: [id], onDelete: SetNull)
-  createdBy User? @relation("ExpenseCreator", fields: [createdById], references: [id])
+  site      Site?   @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  worker    Worker? @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  createdBy User?   @relation("ExpenseCreator", fields: [createdById], references: [id])
 
   @@index([siteId])
+  @@index([workerId])
   @@index([expenseDate])
+}
+
+model SalarySlip {
+  id                String      @id @default(uuid())
+  slipNumber        String      @unique
+  workerId          String
+  workerName        String
+  workerTrade       String
+  monthYear         String      // "YYYY-MM", e.g. "2026-11"
+  monthLabel        String
+  baseSalary        Decimal     @db.Decimal(10, 2)
+  advanceDeductions Decimal     @default(0.00) @db.Decimal(10, 2)
+  otherDeductions   Decimal?    @db.Decimal(10, 2)
+  netPayableAmount  Decimal     @db.Decimal(10, 2)
+  paymentMode       PaymentMode @default(BANK_TRANSFER)
+  paymentDate       DateTime    @default(now())
+  voucherNo         String?
+  notes             String?
+  createdAt         DateTime    @default(now())
+
+  worker            Worker      @relation(fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@index([workerId])
+  @@index([monthYear])
 }
