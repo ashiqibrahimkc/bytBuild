@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  ACCOUNTANT
+}
+
+enum PaymentMode {
+  CASH
+  BANK_TRANSFER
+  UPI
+  CHEQUE
+}
+
+enum SiteStatus {
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+}
+
+enum ExpenseCategory {
+  ROOM_RENT
+  PETROL_FUEL
+  FUEL_TRAVEL
+  OFFICE_OVERHEAD
+  FOOD_TEA_REFRESHMENTS
+  TEA_REFRESHMENTS
+  MACHINERY_RENT
+  EQUIPMENT_RENT
+  SITE_PERMIT_FEES
+  MISCELLANEOUS
+}
+
+model CustomRole {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  permissions String[]  // ["dashboard", "sites", "vendors", "workers", "cashflow", "audit-logs", "team-roles"]
+  isSystem    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  users       AppUser[]
+}
+
+model AppUser {
+  id          String      @id @default(uuid())
+  username    String      @unique
+  email       String?
+  fullName    String
+  password    String
+  roleId      String
+  role        CustomRole  @relation(fields: [roleId], references: [id])
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([roleId])
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  action      String    // e.g., "PURCHASE_MATERIAL", "WAGE_LOG", "DISBURSE_PAYMENT", "UPDATE_ROLE_PERMS", "CREATE_USER"
+  entity      String    // e.g., "VendorPurchase", "WorkerPayment", "Site", "AppUser", "CustomRole"
+  entityId    String?
+  details     String
+  actorName   String
+  actorRole   String
+  createdAt   DateTime  @default(now())
+
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  fullName  String
+  phone     String?
+  role      Role     @default(MANAGER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdSites          Site[]           @relation("SiteCreator")
+  createdPurchases      VendorPurchase[] @relation("PurchaseCreator")
+  createdVendorPayments VendorPayment[]  @relation("VendorPaymentCreator")
+  createdWorkLogs       WorkerWorkLog[]  @relation("WorkLogCreator")
+  createdWorkerPayments WorkerPayment[]  @relation("WorkerPaymentCreator")
+  createdSiteIncomes    SiteIncome[]     @relation("SiteIncomeCreator")
+  createdExpenses       CompanyExpense[] @relation("ExpenseCreator")
+}
+
+model Site {
+  id              String     @id @default(uuid())
+  name            String
+  clientName      String
+  location        String?
+  status          SiteStatus @default(ACTIVE)
+  estimatedBudget Decimal    @default(0.00) @db.Decimal(12, 2)
+  createdById     String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  createdBy       User?            @relation("SiteCreator", fields: [createdById], references: [id])
+  vendorPurchases VendorPurchase[]
+  vendorPayments  VendorPayment[]
+  workerWorkLogs  WorkerWorkLog[]
+  siteIncomes     SiteIncome[]
+  companyExpenses CompanyExpense[]
+}
+
+model Vendor {
+  id            String   @id @default(uuid())
+  name          String
+  phone         String?
+  tradeCategory String? // e.g., 'Cement', 'Iron/Steel', 'Bricks'
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  purchases VendorPurchase[]
+  payments  VendorPayment[]
+}
+
+model VendorPurchase {
+  id           String   @id @default(uuid())
+  vendorId     String
+  siteId       String
+  purchaseDate DateTime @default(now())
+  amount       Decimal  @db.Decimal(12, 2)
+  voucherNo    String?
+  notes        String?
+  createdById  String?
+  createdAt    DateTime @default(now())
+
+  vendor    Vendor @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  site      Site   @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  createdBy User?  @relation("PurchaseCreator", fields: [createdById], references: [id])
+
+  @@index([siteId])
+  @@index([vendorId])
+}
+
+model VendorPayment {
+  id          String      @id @default(uuid())
+  vendorId    String
+  siteId      String?
+  paymentDate DateTime    @default(now())
+  amount      Decimal     @db.Decimal(12, 2)
+  paymentMode PaymentMode @default(CASH)
+  voucherNo   String?
+  notes       String?
+  createdById String?
+  createdAt   DateTime    @default(now())
+
+  vendor    Vendor @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  site      Site?  @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  createdBy User?  @relation("VendorPaymentCreator", fields: [createdById], references: [id])
+
+  @@index([vendorId])
+  @@index([siteId])
+}
+
+model Worker {
+  id               String   @id @default(uuid())
+  name             String
+  phone            String?
+  trade            String? // e.g., 'Mason', 'Helper', 'Carpenter'
+  defaultDailyWage Decimal  @default(0.00) @db.Decimal(10, 2)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workLogs WorkerWorkLog[]
+  payments WorkerPayment[]
+}
+
+model WorkerWorkLog {
+  id          String   @id @default(uuid())
+  workerId    String
+  siteId      String
+  workDate    DateTime @default(now())
+  wageAmount  Decimal  @db.Decimal(10, 2)
+  notes       String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  worker    Worker @relation(fields: [workerId], references: [id], onDelete: Restrict)
+  site      Site   @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  createdBy User?  @relation("WorkLogCreator", fields: [createdById], references: [id])
+
+  @@unique([workerId, siteId, workDate])
+  @@index([workerId])
+  @@index([siteId])
+}
+
+model WorkerPayment {
+  id          String      @id @default(uuid())
+  workerId    String
+  paymentDate DateTime    @default(now())
+  amount      Decimal     @db.Decimal(10, 2)
+  paymentMode PaymentMode @default(CASH)
+  voucherNo   String?
+  notes       String?
+  createdById String?
+  createdAt   DateTime    @default(now())
+
+  worker    Worker @relation(fields: [workerId], references: [id], onDelete: Restrict)
+  createdBy User?  @relation("WorkerPaymentCreator", fields: [createdById], references: [id])
+
+  @@index([workerId])
+}
+
+model SiteIncome {
+  id           String      @id @default(uuid())
+  siteId       String
+  incomeDate   DateTime    @default(now())
+  amount       Decimal     @db.Decimal(12, 2)
+  paymentMode  PaymentMode @default(BANK_TRANSFER)
+  referenceNo  String?
+  receivedFrom String?
+  notes        String?
+  createdById  String?
+  createdAt    DateTime    @default(now())
+
+  site      Site  @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  createdBy User? @relation("SiteIncomeCreator", fields: [createdById], references: [id])
+
+  @@index([siteId])
+}
+
+model CompanyExpense {
+  id          String          @id @default(uuid())
+  siteId      String?
+  category    ExpenseCategory @default(MISCELLANEOUS)
+  expenseDate DateTime        @default(now())
+  amount      Decimal         @db.Decimal(12, 2)
+  paymentMode PaymentMode     @default(CASH)
+  voucherNo   String?
+  notes       String?
+  createdById String?
+  createdAt   DateTime        @default(now())
+
+  site      Site? @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  createdBy User? @relation("ExpenseCreator", fields: [createdById], references: [id])
+
+  @@index([siteId])
+  @@index([expenseDate])
+}
