@@ -77,7 +77,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 />
               </div>
               <span className="font-extrabold text-slate-900 text-sm tracking-tight">
-                BytBuild<span className="text-amber-600">.</span>
+                byten<span className="text-amber-600">.</span>
               </span>
             </div>
 

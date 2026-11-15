@@ -62,12 +62,14 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    // 1. Check local registered user accounts
-    let usersList = [
-      { username: "abc@gmail.com", password: "abc123", fullName: "Owner", email: "abc@gmail.com", role: "OWNER" },
-      { username: "accountant", password: "accountant123", fullName: "Accountant", email: "accountant@bytbuild.com", role: "ACCOUNTANT" },
-      { username: "manager", password: "manager123", fullName: "Site Manager", email: "manager@bytbuild.com", role: "MANAGER" },
-    ];
+    // 1. Check dynamically registered user accounts (No hardcoded accounts)
+    let usersList: Array<{
+      username: string;
+      password?: string;
+      fullName: string;
+      email: string;
+      role: string;
+    }> = [];
 
     if (typeof window !== "undefined") {
       const savedUsers = localStorage.getItem("c_users");
@@ -82,8 +84,8 @@ export default function LoginPage() {
               username: u.username,
               password: u.password,
               fullName: u.fullName,
-              email: u.email || `${u.username}@bytbuild.com`,
-              role: r?.name || "MANAGER",
+              email: u.email || `${u.username}@byten.in`,
+              role: r?.name || "OWNER",
             };
           });
         } catch {}
@@ -161,7 +163,7 @@ export default function LoginPage() {
           </div>
           <div>
             <span className="font-extrabold text-2xl tracking-tight text-white">
-              BytBuild<span className="text-amber-500">.</span>
+              byten<span className="text-amber-500">.</span>
             </span>
             <span className="block text-[11px] font-mono uppercase tracking-widest text-slate-400">
               Enterprise Construction ERP
@@ -207,7 +209,7 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 border-t border-slate-800/80 pt-6">
-          <span>&copy; 2026 BytBuild Systems. All rights reserved.</span>
+          <span>&copy; 2026 byten. All rights reserved.</span>
           <div className="flex items-center gap-3">
             <span>Audit Trail Enabled</span>
             <span>&bull;</span>
@@ -224,14 +226,14 @@ export default function LoginPage() {
             <div className="bg-white rounded-xl p-1 shadow-md border border-slate-200 h-9 w-9 overflow-hidden flex items-center justify-center">
               <Image
                 src="/image/logo.png"
-                alt="BytBuild Logo"
+                alt="byten Logo"
                 width={36}
                 height={36}
                 className="w-full h-full object-contain"
               />
             </div>
             <div>
-              <span className="text-slate-900 text-xl font-bold">BytBuild</span>
+              <span className="text-slate-900 text-xl font-bold">byten</span>
               <span className="text-[10px] block text-slate-400 uppercase tracking-wider font-mono">
                 Construction ERP
               </span>
@@ -333,7 +335,7 @@ export default function LoginPage() {
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
               256-bit Encrypted Session
             </span>
-            <span className="font-mono">BytBuild ERP v2.4</span>
+            <span className="font-mono">byten ERP v2.4</span>
           </div>
         </div>
       </div>

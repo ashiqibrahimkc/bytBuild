@@ -185,39 +185,8 @@ const INITIAL_ROLES: CustomRole[] = [
   },
 ];
 
-// ─── Initial Users: Fresh Credentials ────────────────────────────────────
-const INITIAL_USERS: AppUser[] = [
-  {
-    id: "user-owner",
-    username: "abc@gmail.com",
-    password: "abc123",
-    fullName: "Owner",
-    email: "abc@gmail.com",
-    roleId: "role-owner",
-    isActive: true,
-    createdAt: "2026-11-14",
-  },
-  {
-    id: "user-accountant",
-    username: "accountant",
-    password: "accountant123",
-    fullName: "Accountant",
-    email: "accountant@company.com",
-    roleId: "role-accountant",
-    isActive: true,
-    createdAt: "2026-11-14",
-  },
-  {
-    id: "user-manager",
-    username: "manager",
-    password: "manager123",
-    fullName: "Site Manager",
-    email: "manager@company.com",
-    roleId: "role-manager",
-    isActive: true,
-    createdAt: "2026-11-14",
-  },
-];
+// ─── Initial Users: Empty (No hardcoded accounts or credentials) ─────────
+const INITIAL_USERS: AppUser[] = [];
 
 // ─── Clean Fresh Empty Collections ────────────────────────────────────────
 const INITIAL_AUDIT_LOGS: AuditLog[] = [];
@@ -233,7 +202,7 @@ const INITIAL_EXPENSES: CompanyExpense[] = [];
 
 export function ConstructionProvider({ children }: { children: React.ReactNode }) {
   const [role, setRoleState] = useState<UserRole>("OWNER");
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(INITIAL_USERS[0]);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
 
   // Company Name - Dynamic & Configurable by Owner
   const [companyName, setCompanyNameState] = useState<string>(() => {
@@ -241,7 +210,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
       const saved = localStorage.getItem("bytbuild_company_name");
       if (saved) return saved;
     }
-    return "BytBuild Constructions";
+    return "byten";
   });
 
   const setCompanyName = useCallback((name: string) => {
@@ -254,22 +223,13 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   // One-time fresh start storage cleanup
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
+      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v8");
       if (!isFresh) {
         localStorage.clear();
-        localStorage.setItem("bytbuild_fresh_clean_v6", "true");
-        localStorage.setItem("bytbuild_company_name", "BytBuild Constructions");
-        localStorage.setItem("c_users", JSON.stringify(INITIAL_USERS));
+        localStorage.setItem("bytbuild_fresh_clean_v8", "true");
+        localStorage.setItem("bytbuild_company_name", "byten");
         localStorage.setItem("c_roles", JSON.stringify(INITIAL_ROLES));
-        localStorage.setItem(
-          "bytbuild_user",
-          JSON.stringify({
-            username: "abc@gmail.com",
-            fullName: "Owner",
-            email: "abc@gmail.com",
-            role: "OWNER",
-          })
-        );
+        localStorage.setItem("c_users", JSON.stringify([]));
       }
     }
   }, []);

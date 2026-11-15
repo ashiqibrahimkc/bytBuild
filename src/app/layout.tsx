@@ -6,7 +6,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "BytBuild – Construction Cash Flow & Site ERP",
+  title: "byten – Construction Cash Flow & Site ERP",
   description: "Enterprise cash flow, vendor credit, worker wages & multi-site management with RBAC.",
   icons: {
     icon: "/image/logo.png",
