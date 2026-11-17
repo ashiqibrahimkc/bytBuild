@@ -1212,8 +1212,8 @@ export default function SitesPage() {
               </div>
             </div>
 
-            {/* ── Unified Statement Table ── */}
-            <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
+            {/* ── Unified Statement Table (On-Screen Paginated View) ── */}
+            <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs print:hidden">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-[10px] uppercase font-mono text-slate-500 border-b border-slate-200">
                   <tr>
@@ -1284,6 +1284,87 @@ export default function SitesPage() {
               </table>
             </div>
 
+            {/* ── Print-Only Table (Full Unpaginated Statement with ALL Data) ── */}
+            <div className="hidden print:block">
+              <table className="w-full text-left text-xs border border-slate-300">
+                <thead className="bg-slate-100 text-[10px] uppercase font-mono text-slate-900 border-b-2 border-slate-400">
+                  <tr>
+                    <th className="py-2 px-3 font-bold">Date</th>
+                    <th className="py-2 px-3 font-bold">Type</th>
+                    <th className="py-2 px-3 font-bold">Party / Description</th>
+                    <th className="py-2 px-3 font-bold">Voucher / Ref #</th>
+                    <th className="py-2 px-3 text-right font-bold">Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredStatementEntries.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-6 text-center text-slate-400 italic">
+                        No transactions recorded for this site project.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredStatementEntries.map((entry) => (
+                      <tr key={`print-${entry.id}`} className="break-inside-avoid text-slate-900 border-b border-slate-200">
+                        <td className="py-2 px-3 font-mono whitespace-nowrap text-xs">
+                          {formatDate(entry.date)}
+                        </td>
+                        <td className="py-2 px-3 whitespace-nowrap font-mono font-bold text-[10px]">
+                          {entry.typeLabel}
+                        </td>
+                        <td className="py-2 px-3">
+                          <div className="font-bold text-slate-900">{entry.title}</div>
+                          {entry.subtitle && (
+                            <div className="text-[10px] text-slate-600">{entry.subtitle}</div>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 font-mono font-semibold whitespace-nowrap text-slate-800">
+                          {entry.voucherNo ? `#${entry.voucherNo}` : "—"}
+                        </td>
+                        <td className="py-2 px-3 text-right whitespace-nowrap font-mono font-bold text-xs">
+                          <span className={entry.isInflow ? "text-emerald-700" : "text-rose-700"}>
+                            {entry.isInflow
+                              ? `+${formatCurrency(entry.amount)}`
+                              : `-${formatCurrency(entry.amount)}`}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+                <tfoot className="bg-slate-50 border-t-2 border-slate-400 font-mono text-xs">
+                  <tr className="border-b border-slate-200">
+                    <td colSpan={4} className="py-1.5 px-3 text-right font-semibold text-slate-700">
+                      Total Client Inflows:
+                    </td>
+                    <td className="py-1.5 px-3 text-right font-bold text-emerald-700">
+                      +{formatCurrency(currentStats.totalIncome)}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-slate-200">
+                    <td colSpan={4} className="py-1.5 px-3 text-right font-semibold text-slate-700">
+                      Total Site Expenses (Materials, Wages &amp; Overhead):
+                    </td>
+                    <td className="py-1.5 px-3 text-right font-bold text-rose-700">
+                      -{formatCurrency(currentStats.totalExpense)}
+                    </td>
+                  </tr>
+                  <tr className="font-bold">
+                    <td colSpan={4} className="py-2 px-3 text-right font-bold text-slate-900">
+                      Net Project Balance / Margin:
+                    </td>
+                    <td
+                      className={`py-2 px-3 text-right font-black ${
+                        currentStats.netMargin >= 0 ? "text-emerald-700" : "text-rose-700"
+                      }`}
+                    >
+                      {formatCurrency(currentStats.netMargin)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
             {/* Pagination */}
             <div className="print:hidden">
               <Pagination
@@ -1292,11 +1373,12 @@ export default function SitesPage() {
                 pageSize={statementPageSize}
                 onPageChange={setStatementPage}
                 onPageSizeChange={setStatementPageSize}
+                pageSizeOptions={[5, 10, 25, 50, 100, 500]}
               />
             </div>
 
             {/* Print Sign-off Blocks */}
-            <div className="hidden print:grid pt-12 grid-cols-2 gap-8 text-center text-xs">
+            <div className="hidden print:grid pt-12 grid-cols-2 gap-8 text-center text-xs break-inside-avoid">
               <div>
                 <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto font-bold text-slate-800">
                   Site Engineer / Project Manager
