@@ -24,6 +24,7 @@ import {
   Landmark,
   Banknote,
   Printer,
+  HardHat,
 } from "lucide-react";
 import { useConstruction } from "@/lib/store";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -324,8 +325,9 @@ export default function CashFlowPage() {
         </CardHeader>
 
         <CardContent className="p-4 sm:p-6 space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
             {[
+              { label: "Outside Labour", cat: "OUTSIDE_LABOR", icon: HardHat, color: "text-amber-600 dark:text-amber-400", border: "border-l-amber-500" },
               { label: "Room / Camp Rent", cat: "ROOM_RENT", icon: Building, color: "text-blue-600 dark:text-blue-400", border: "border-l-blue-500" },
               { label: "Company Petrol", cat: "PETROL_FUEL", icon: Fuel, color: "text-amber-600 dark:text-amber-400", border: "border-l-amber-500" },
               { label: "Worker Mess & Tea", cat: "FOOD_TEA_REFRESHMENTS", icon: Coffee, color: "text-emerald-600 dark:text-emerald-400", border: "border-l-emerald-500" },

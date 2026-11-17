@@ -18,6 +18,7 @@ import {
   Layers,
   ArrowUpRight,
   TrendingDown,
+  HardHat,
 } from "lucide-react";
 import { useConstruction } from "@/lib/store";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -33,6 +34,12 @@ const CATEGORY_MAP: Record<
   string,
   { label: string; icon: React.ElementType; colorClass: string; badgeClass: string }
 > = {
+  OUTSIDE_LABOR: {
+    label: "Outside Labour Wages",
+    icon: HardHat,
+    colorClass: "text-amber-600 dark:text-amber-400",
+    badgeClass: "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-900/60",
+  },
   SALARY_ADVANCE: {
     label: "Worker Salary Advance",
     icon: IndianRupee,
@@ -484,6 +491,7 @@ export default function CompanyExpensesPage() {
           <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mr-1 font-mono">Category:</span>
           {[
             { id: "ALL", label: "All Overhead" },
+            { id: "OUTSIDE_LABOR", label: "👷 Outside Labour" },
             { id: "ROOM_RENT", label: "🏠 Room / Camp Rent" },
             { id: "PETROL_FUEL", label: "⛽ Petrol & Fuel" },
             { id: "FOOD_TEA_REFRESHMENTS", label: "🍵 Worker Mess & Tea" },
@@ -783,6 +791,7 @@ export default function CompanyExpensesPage() {
               className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-hidden"
               required
             >
+              <option value="OUTSIDE_LABOR">👷 Outside Labour Wages (Immediate Payment)</option>
               <option value="SALARY_ADVANCE">💵 Salaried Worker Advance</option>
               <option value="ROOM_RENT">🏠 Room / Labour Camp Rent</option>
               <option value="PETROL_FUEL">⛽ Company Petrol & Vehicle Fuel</option>

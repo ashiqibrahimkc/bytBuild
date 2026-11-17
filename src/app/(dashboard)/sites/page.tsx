@@ -358,6 +358,8 @@ export default function SitesPage() {
     allSiteMiscExpenses.forEach((e) => {
       const formatCategory = (cat: string) => {
         switch (cat) {
+          case "OUTSIDE_LABOR":
+            return "Outside Labour Wages";
           case "ROOM_RENT":
             return "Room / Labour Camp Rent";
           case "PETROL_FUEL":
@@ -384,7 +386,7 @@ export default function SitesPage() {
         id: `exp-${e.id}`,
         date: e.expenseDate,
         type: "EXPENSE",
-        typeLabel: "Site Expense",
+        typeLabel: e.category === "OUTSIDE_LABOR" ? "Outside Labour" : "Site Expense",
         title: formatCategory(e.category),
         subtitle: [e.notes, `Paid via ${e.paymentMode}`].filter(Boolean).join(" • "),
         voucherNo: e.voucherNo,
@@ -1238,6 +1240,8 @@ export default function SitesPage() {
                           ? "bg-amber-50 text-amber-800 border-amber-200"
                           : entry.type === "LABOR"
                           ? "bg-blue-50 text-blue-700 border-blue-200"
+                          : entry.typeLabel === "Outside Labour"
+                          ? "bg-amber-50 text-amber-800 border-amber-200"
                           : "bg-purple-50 text-purple-700 border-purple-200";
 
                       return (

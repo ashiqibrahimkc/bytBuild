@@ -882,6 +882,7 @@ export function ActionModals({
               onChange={(e) => setExpenseCategory(e.target.value as ExpenseCategory)}
               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
+              <option value="OUTSIDE_LABOR">👷 Outside Labour Wages (Immediate Payment)</option>
               <option value="ROOM_RENT">🏠 Room / Labour Camp Rent</option>
               <option value="PETROL_FUEL">⛽ Company Petrol & Vehicle Fuel</option>
               <option value="FOOD_TEA_REFRESHMENTS">🍵 Worker Mess & Tea Refreshments</option>
@@ -974,7 +975,7 @@ export function ActionModals({
             </label>
             <Input
               type="text"
-              placeholder="e.g. Site supervisor visit to Sector 45"
+              placeholder={expenseCategory === "OUTSIDE_LABOR" ? "e.g. 3 casual daily helpers for unloading / concrete work" : "e.g. Site supervisor visit to Sector 45"}
               value={expenseNotes}
               onChange={(e) => setExpenseNotes(e.target.value)}
             />

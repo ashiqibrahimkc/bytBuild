@@ -50,6 +50,7 @@ export type PaymentMode = "CASH" | "BANK_TRANSFER" | "UPI" | "CHEQUE";
 export type SiteStatus = "ACTIVE" | "COMPLETED" | "ON_HOLD";
 
 export type ExpenseCategory =
+  | "OUTSIDE_LABOR"
   | "SALARY_ADVANCE"
   | "ROOM_RENT"
   | "PETROL_FUEL"
