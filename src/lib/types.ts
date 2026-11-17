@@ -69,6 +69,7 @@ export interface Site {
   location: string;
   status: SiteStatus;
   estimatedBudget: number;
+  openingBalance?: number;
   createdAt: string;
 }
 
@@ -78,6 +79,7 @@ export interface Vendor {
   phone: string;
   tradeCategory: string; // e.g. Cement, Steel, Bricks
   notes?: string;
+  openingBalance?: number;
   createdAt: string;
 }
 
@@ -115,6 +117,7 @@ export interface Worker {
   defaultDailyWage: number; // Daily rate for DAILY_WAGE
   monthlySalary?: number; // Fixed monthly salary for MONTHLY_SALARY
   isActive: boolean;
+  openingBalance?: number;
   createdAt: string;
 }
 

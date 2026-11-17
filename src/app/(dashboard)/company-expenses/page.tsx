@@ -124,10 +124,12 @@ export default function CompanyExpensesPage() {
         year: "numeric",
       })
     );
+    setExpenseDate(new Date().toISOString().split("T")[0]);
   }, []);
 
   // New Expense Modal Form state
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [expenseDate, setExpenseDate] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<ExpenseCategory>("ROOM_RENT");
   const [siteId, setSiteId] = useState<string>("");
@@ -195,13 +197,14 @@ export default function CompanyExpensesPage() {
       paymentMode,
       voucherNo: voucherNo ? voucherNo.trim() : undefined,
       notes: notes ? notes.trim() : undefined,
-      expenseDate: new Date().toISOString().split("T")[0],
+      expenseDate: expenseDate || new Date().toISOString().split("T")[0],
     });
 
     setAmount("");
     setWorkerId("");
     setVoucherNo("");
     setNotes("");
+    setExpenseDate(new Date().toISOString().split("T")[0]);
     setIsAddOpen(false);
   };
 
@@ -827,6 +830,19 @@ export default function CompanyExpensesPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Expense Date *
+              </label>
+              <Input
+                type="date"
+                value={expenseDate}
+                onChange={(e) => setExpenseDate(e.target.value)}
+                required
+                className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Amount (₹) *
               </label>
               <Input
@@ -838,7 +854,9 @@ export default function CompanyExpensesPage() {
                 className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
               />
             </div>
+          </div>
 
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Payment Mode *
@@ -853,6 +871,18 @@ export default function CompanyExpensesPage() {
                 <option value="CASH">Physical Cash</option>
                 <option value="CHEQUE">Cheque</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Voucher / Bill / Receipt Number
+              </label>
+              <Input
+                placeholder="e.g. RENT-CAMP-01 or PETROL-902"
+                value={voucherNo}
+                onChange={(e) => setVoucherNo(e.target.value)}
+                className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
+              />
             </div>
           </div>
 
@@ -872,18 +902,6 @@ export default function CompanyExpensesPage() {
                 </option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Voucher / Bill / Receipt Number
-            </label>
-            <Input
-              placeholder="e.g. RENT-CAMP-01 or PETROL-902"
-              value={voucherNo}
-              onChange={(e) => setVoucherNo(e.target.value)}
-              className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
-            />
           </div>
 
           <div>

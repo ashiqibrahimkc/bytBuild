@@ -61,6 +61,7 @@ export default function WorkersPage() {
   const [editDefaultWage, setEditDefaultWage] = useState("950");
   const [editMonthlySalary, setEditMonthlySalary] = useState("35000");
   const [editIsActive, setEditIsActive] = useState(true);
+  const [editOpeningBalance, setEditOpeningBalance] = useState("");
 
   // Delete Worker State & Relational Integrity Check
   const [deletingWorker, setDeletingWorker] = useState<Worker | null>(null);
@@ -76,6 +77,7 @@ export default function WorkersPage() {
     setEditDefaultWage(worker.defaultDailyWage ? worker.defaultDailyWage.toString() : "950");
     setEditMonthlySalary(worker.monthlySalary ? worker.monthlySalary.toString() : "35000");
     setEditIsActive(worker.isActive !== false);
+    setEditOpeningBalance(worker.openingBalance ? worker.openingBalance.toString() : "");
   };
 
   const handleUpdateWorker = (e: React.FormEvent) => {
@@ -90,6 +92,7 @@ export default function WorkersPage() {
       defaultDailyWage: editCompensationType === "DAILY_WAGE" ? (parseFloat(editDefaultWage) || 0) : 0,
       monthlySalary: editCompensationType === "MONTHLY_SALARY" ? (parseFloat(editMonthlySalary) || 0) : undefined,
       isActive: editIsActive,
+      openingBalance: parseFloat(editOpeningBalance) || 0,
     });
     setEditingWorker(null);
   };
@@ -156,6 +159,7 @@ export default function WorkersPage() {
   const [compensationType, setCompensationType] = useState<WorkerCompensationType>("DAILY_WAGE");
   const [defaultWage, setDefaultWage] = useState("");
   const [monthlySalary, setMonthlySalary] = useState("");
+  const [openingBalance, setOpeningBalance] = useState("");
 
   const handleCreateWorker = (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,6 +173,7 @@ export default function WorkersPage() {
       defaultDailyWage: compensationType === "DAILY_WAGE" ? (parseFloat(defaultWage) || 0) : 0,
       monthlySalary: compensationType === "MONTHLY_SALARY" ? (parseFloat(monthlySalary) || 0) : undefined,
       isActive: true,
+      openingBalance: parseFloat(openingBalance) || 0,
     });
 
     setName("");
@@ -176,6 +181,7 @@ export default function WorkersPage() {
     setCompensationType("DAILY_WAGE");
     setDefaultWage("950");
     setMonthlySalary("35000");
+    setOpeningBalance("");
     setIsAddWorkerOpen(false);
   };
 
@@ -1342,13 +1348,26 @@ export default function WorkersPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number (Optional)</label>
-            <Input
-              placeholder="+91 98765 43210"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number (Optional)</label>
+              <Input
+                placeholder="+91 98765 43210"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Opening Balance / Wage Due (₹) <span className="text-slate-400 font-normal">(Optional)</span>
+              </label>
+              <Input
+                type="number"
+                placeholder="e.g. 5000 (Optional)"
+                value={openingBalance}
+                onChange={(e) => setOpeningBalance(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
@@ -1467,17 +1486,29 @@ export default function WorkersPage() {
                 onChange={(e) => setEditPhone(e.target.value)}
               />
             </div>
-            <div className="pt-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={editIsActive}
-                  onChange={(e) => setEditIsActive(e.target.checked)}
-                  className="rounded text-amber-600 focus:ring-amber-500"
-                />
-                <span className="text-xs font-semibold text-slate-700">Active Roster Worker</span>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Opening Balance / Wage Due (₹) <span className="text-slate-400 font-normal">(Optional)</span>
               </label>
+              <Input
+                type="number"
+                placeholder="e.g. 5000"
+                value={editOpeningBalance}
+                onChange={(e) => setEditOpeningBalance(e.target.value)}
+              />
             </div>
+          </div>
+
+          <div className="pt-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editIsActive}
+                onChange={(e) => setEditIsActive(e.target.checked)}
+                className="rounded text-amber-600 focus:ring-amber-500"
+              />
+              <span className="text-xs font-semibold text-slate-700">Active Roster Worker</span>
+            </label>
           </div>
 
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">

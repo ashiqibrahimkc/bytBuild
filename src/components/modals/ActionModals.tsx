@@ -40,17 +40,17 @@ export function ActionModals({
   preselectedWorkerId,
   preselectedSiteId,
   isOpenPurchase = false,
-  onClosePurchase = () => {},
+  onClosePurchase = () => { },
   isOpenWorkLog = false,
-  onCloseWorkLog = () => {},
+  onCloseWorkLog = () => { },
   isOpenVendorPay = false,
-  onCloseVendorPay = () => {},
+  onCloseVendorPay = () => { },
   isOpenWorkerPay = false,
-  onCloseWorkerPay = () => {},
+  onCloseWorkerPay = () => { },
   isOpenIncome = false,
-  onCloseIncome = () => {},
+  onCloseIncome = () => { },
   isOpenExpense = false,
-  onCloseExpense = () => {},
+  onCloseExpense = () => { },
 }: ActionModalsProps) {
   const {
     role,
@@ -65,9 +65,12 @@ export function ActionModals({
     recordCompanyExpense,
   } = useConstruction();
 
+  const getTodayDate = () => new Date().toISOString().split("T")[0];
+
   // 1. Vendor Material Purchase State
   const [purchaseVendorId, setPurchaseVendorId] = useState("");
   const [purchaseSiteId, setPurchaseSiteId] = useState(defaultSiteId || "");
+  const [purchaseDate, setPurchaseDate] = useState("");
   const [purchaseAmount, setPurchaseAmount] = useState("");
   const [purchaseVoucherNo, setPurchaseVoucherNo] = useState("");
   const [purchaseNotes, setPurchaseNotes] = useState("");
@@ -75,12 +78,14 @@ export function ActionModals({
   // 2. Worker Work Log State
   const [workLogWorkerId, setWorkLogWorkerId] = useState("");
   const [workLogSiteId, setWorkLogSiteId] = useState(defaultSiteId || "");
+  const [workLogDate, setWorkLogDate] = useState("");
   const [workLogWageAmount, setWorkLogWageAmount] = useState("");
   const [workLogNotes, setWorkLogNotes] = useState("");
 
   // 3. Vendor Payment State
   const [payVendorId, setPayVendorId] = useState("");
   const [payVendorSiteId, setPayVendorSiteId] = useState(defaultSiteId || "");
+  const [payVendorDate, setPayVendorDate] = useState("");
   const [payVendorAmount, setPayVendorAmount] = useState("");
   const [payVendorMode, setPayVendorMode] = useState<PaymentMode>("CASH");
   const [payVendorVoucher, setPayVendorVoucher] = useState("");
@@ -88,6 +93,7 @@ export function ActionModals({
 
   // 4. Worker Payment State
   const [payWorkerId, setPayWorkerId] = useState("");
+  const [payWorkerDate, setPayWorkerDate] = useState("");
   const [payWorkerAmount, setPayWorkerAmount] = useState("");
   const [payWorkerMode, setPayWorkerMode] = useState<PaymentMode>("CASH");
   const [payWorkerVoucher, setPayWorkerVoucher] = useState("");
@@ -95,6 +101,7 @@ export function ActionModals({
 
   // 5. Site Income State
   const [incomeSiteId, setIncomeSiteId] = useState(defaultSiteId || "");
+  const [incomeDate, setIncomeDate] = useState("");
   const [incomeAmount, setIncomeAmount] = useState("");
   const [incomeMode, setIncomeMode] = useState<PaymentMode>("BANK_TRANSFER");
   const [incomeReceivedFrom, setIncomeReceivedFrom] = useState("");
@@ -104,10 +111,21 @@ export function ActionModals({
   // 6. Company Expense State
   const [expenseSiteId, setExpenseSiteId] = useState<string>(defaultSiteId || "");
   const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>("FUEL_TRAVEL");
+  const [expenseDate, setExpenseDate] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseMode, setExpenseMode] = useState<PaymentMode>("CASH");
   const [expenseVoucher, setExpenseVoucher] = useState("");
   const [expenseNotes, setExpenseNotes] = useState("");
+
+  React.useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+    setPurchaseDate((d) => d || today);
+    setWorkLogDate((d) => d || today);
+    setPayVendorDate((d) => d || today);
+    setPayWorkerDate((d) => d || today);
+    setIncomeDate((d) => d || today);
+    setExpenseDate((d) => d || today);
+  }, [isOpenPurchase, isOpenWorkLog, isOpenVendorPay, isOpenWorkerPay, isOpenIncome, isOpenExpense]);
 
   React.useEffect(() => {
     if (preselectedVendorId) {
@@ -153,7 +171,7 @@ export function ActionModals({
     recordMaterialPurchase({
       vendorId: purchaseVendorId,
       siteId: purchaseSiteId,
-      purchaseDate: new Date().toISOString().split("T")[0],
+      purchaseDate: purchaseDate || getTodayDate(),
       amount: parseFloat(purchaseAmount),
       voucherNo: purchaseVoucherNo || undefined,
       notes: purchaseNotes || undefined,
@@ -162,6 +180,7 @@ export function ActionModals({
     setPurchaseAmount("");
     setPurchaseVoucherNo("");
     setPurchaseNotes("");
+    setPurchaseDate(getTodayDate());
     onClosePurchase();
   };
 
@@ -172,12 +191,13 @@ export function ActionModals({
     assignWorkerWorkLog({
       workerId: workLogWorkerId,
       siteId: workLogSiteId,
-      workDate: new Date().toISOString().split("T")[0],
+      workDate: workLogDate || getTodayDate(),
       wageAmount: parseFloat(workLogWageAmount),
       notes: workLogNotes || undefined,
     });
     setWorkLogWageAmount("");
     setWorkLogNotes("");
+    setWorkLogDate(getTodayDate());
     onCloseWorkLog();
   };
 
@@ -188,7 +208,7 @@ export function ActionModals({
     recordVendorPayment({
       vendorId: payVendorId,
       siteId: payVendorSiteId || undefined,
-      paymentDate: new Date().toISOString().split("T")[0],
+      paymentDate: payVendorDate || getTodayDate(),
       amount: parseFloat(payVendorAmount),
       paymentMode: payVendorMode,
       voucherNo: payVendorVoucher || undefined,
@@ -197,6 +217,7 @@ export function ActionModals({
     setPayVendorAmount("");
     setPayVendorVoucher("");
     setPayVendorNotes("");
+    setPayVendorDate(getTodayDate());
     onCloseVendorPay();
   };
 
@@ -206,7 +227,7 @@ export function ActionModals({
 
     recordWorkerPayment({
       workerId: payWorkerId,
-      paymentDate: new Date().toISOString().split("T")[0],
+      paymentDate: payWorkerDate || getTodayDate(),
       amount: parseFloat(payWorkerAmount),
       paymentMode: payWorkerMode,
       voucherNo: payWorkerVoucher || undefined,
@@ -215,6 +236,7 @@ export function ActionModals({
     setPayWorkerAmount("");
     setPayWorkerVoucher("");
     setPayWorkerNotes("");
+    setPayWorkerDate(getTodayDate());
     onCloseWorkerPay();
   };
 
@@ -225,7 +247,7 @@ export function ActionModals({
 
     recordSiteIncome({
       siteId: incomeSiteId,
-      incomeDate: new Date().toISOString().split("T")[0],
+      incomeDate: incomeDate || getTodayDate(),
       amount: parseFloat(incomeAmount),
       paymentMode: incomeMode,
       receivedFrom: incomeReceivedFrom || undefined,
@@ -236,6 +258,7 @@ export function ActionModals({
     setIncomeReceivedFrom("");
     setIncomeRefNo("");
     setIncomeNotes("");
+    setIncomeDate(getTodayDate());
     onCloseIncome();
   };
 
@@ -246,7 +269,7 @@ export function ActionModals({
     recordCompanyExpense({
       siteId: expenseSiteId ? expenseSiteId : undefined,
       category: expenseCategory,
-      expenseDate: new Date().toISOString().split("T")[0],
+      expenseDate: expenseDate || getTodayDate(),
       amount: parseFloat(expenseAmount),
       paymentMode: expenseMode,
       voucherNo: expenseVoucher || undefined,
@@ -255,6 +278,7 @@ export function ActionModals({
     setExpenseAmount("");
     setExpenseVoucher("");
     setExpenseNotes("");
+    setExpenseDate(getTodayDate());
     onCloseExpense();
   };
 
@@ -316,15 +340,13 @@ export function ActionModals({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Purchase Amount (₹) *
+                Purchase Date *
               </label>
               <Input
-                type="number"
-                placeholder="e.g. 45000"
-                value={purchaseAmount}
-                onChange={(e) => setPurchaseAmount(e.target.value)}
+                type="date"
+                value={purchaseDate}
+                onChange={(e) => setPurchaseDate(e.target.value)}
                 required
-                min="1"
               />
             </div>
             <div>
@@ -338,6 +360,20 @@ export function ActionModals({
                 onChange={(e) => setPurchaseVoucherNo(e.target.value)}
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Purchase Amount (₹) *
+            </label>
+            <Input
+              type="number"
+              placeholder="e.g. 45000"
+              value={purchaseAmount}
+              onChange={(e) => setPurchaseAmount(e.target.value)}
+              required
+              min="1"
+            />
           </div>
 
           <div>
@@ -418,18 +454,31 @@ export function ActionModals({
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Daily Wage Amount (₹) *
-            </label>
-            <Input
-              type="number"
-              placeholder="e.g. 950"
-              value={workLogWageAmount}
-              onChange={(e) => setWorkLogWageAmount(e.target.value)}
-              required
-              min="1"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Work / Attendance Date *
+              </label>
+              <Input
+                type="date"
+                value={workLogDate}
+                onChange={(e) => setWorkLogDate(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Daily Wage Amount (₹) *
+              </label>
+              <Input
+                type="number"
+                placeholder="e.g. 950"
+                value={workLogWageAmount}
+                onChange={(e) => setWorkLogWageAmount(e.target.value)}
+                required
+                min="1"
+              />
+            </div>
           </div>
 
           <div>
@@ -501,6 +550,17 @@ export function ActionModals({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Payment Date *
+              </label>
+              <Input
+                type="date"
+                value={payVendorDate}
+                onChange={(e) => setPayVendorDate(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Amount Paid (₹) *
               </label>
               <Input
@@ -512,6 +572,9 @@ export function ActionModals({
                 min="1"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Payment Mode *
@@ -527,9 +590,6 @@ export function ActionModals({
                 <option value="CHEQUE">Cheque</option>
               </select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Voucher / Cheque No.
@@ -541,17 +601,18 @@ export function ActionModals({
                 onChange={(e) => setPayVendorVoucher(e.target.value)}
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Notes
-              </label>
-              <Input
-                type="text"
-                placeholder="e.g. Part payment for steel delivery"
-                value={payVendorNotes}
-                onChange={(e) => setPayVendorNotes(e.target.value)}
-              />
-            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Notes
+            </label>
+            <Input
+              type="text"
+              placeholder="e.g. Part payment for steel delivery"
+              value={payVendorNotes}
+              onChange={(e) => setPayVendorNotes(e.target.value)}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -595,6 +656,17 @@ export function ActionModals({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Payment Date *
+              </label>
+              <Input
+                type="date"
+                value={payWorkerDate}
+                onChange={(e) => setPayWorkerDate(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Amount Paid (₹) *
               </label>
               <Input
@@ -606,6 +678,9 @@ export function ActionModals({
                 min="1"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Payment Mode *
@@ -620,9 +695,6 @@ export function ActionModals({
                 <option value="BANK_TRANSFER">Bank Transfer</option>
               </select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Voucher / Receipt No.
@@ -634,17 +706,18 @@ export function ActionModals({
                 onChange={(e) => setPayWorkerVoucher(e.target.value)}
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Notes
-              </label>
-              <Input
-                type="text"
-                placeholder="e.g. Saturday weekly settlement"
-                value={payWorkerNotes}
-                onChange={(e) => setPayWorkerNotes(e.target.value)}
-              />
-            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Notes
+            </label>
+            <Input
+              type="text"
+              placeholder="e.g. Saturday weekly settlement"
+              value={payWorkerNotes}
+              onChange={(e) => setPayWorkerNotes(e.target.value)}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -704,6 +777,17 @@ export function ActionModals({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Receipt Date *
+                </label>
+                <Input
+                  type="date"
+                  value={incomeDate}
+                  onChange={(e) => setIncomeDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Amount Received (₹) *
                 </label>
                 <Input
@@ -715,6 +799,9 @@ export function ActionModals({
                   min="1"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Payment Mode *
@@ -729,6 +816,17 @@ export function ActionModals({
                   <option value="UPI">UPI</option>
                   <option value="CASH">Cash</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Reference / Cheque / UTR No.
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g. HDFC-90218"
+                  value={incomeRefNo}
+                  onChange={(e) => setIncomeRefNo(e.target.value)}
+                />
               </div>
             </div>
 
@@ -746,27 +844,15 @@ export function ActionModals({
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Reference / Cheque / UTR No.
+                  Notes
                 </label>
                 <Input
                   type="text"
-                  placeholder="e.g. HDFC-90218"
-                  value={incomeRefNo}
-                  onChange={(e) => setIncomeRefNo(e.target.value)}
+                  placeholder="e.g. Phase 2 slab casting milestone payment"
+                  value={incomeNotes}
+                  onChange={(e) => setIncomeNotes(e.target.value)}
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Notes
-              </label>
-              <Input
-                type="text"
-                placeholder="e.g. Phase 2 slab casting milestone payment"
-                value={incomeNotes}
-                onChange={(e) => setIncomeNotes(e.target.value)}
-              />
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
@@ -830,6 +916,17 @@ export function ActionModals({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Expense Date *
+              </label>
+              <Input
+                type="date"
+                value={expenseDate}
+                onChange={(e) => setExpenseDate(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Amount (₹) *
               </label>
               <Input
@@ -841,6 +938,9 @@ export function ActionModals({
                 min="1"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Payment Mode *
@@ -855,9 +955,6 @@ export function ActionModals({
                 <option value="BANK_TRANSFER">Bank Transfer</option>
               </select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Voucher / Bill No.
@@ -869,17 +966,18 @@ export function ActionModals({
                 onChange={(e) => setExpenseVoucher(e.target.value)}
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Notes
-              </label>
-              <Input
-                type="text"
-                placeholder="e.g. Site supervisor visit to Sector 45"
-                value={expenseNotes}
-                onChange={(e) => setExpenseNotes(e.target.value)}
-              />
-            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Notes
+            </label>
+            <Input
+              type="text"
+              placeholder="e.g. Site supervisor visit to Sector 45"
+              value={expenseNotes}
+              onChange={(e) => setExpenseNotes(e.target.value)}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

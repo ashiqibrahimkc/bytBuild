@@ -64,6 +64,7 @@ export default function SitesPage() {
   const [editLocation, setEditLocation] = useState("");
   const [editStatus, setEditStatus] = useState<SiteStatus>("ACTIVE");
   const [editEstimatedBudget, setEditEstimatedBudget] = useState("");
+  const [editOpeningBalance, setEditOpeningBalance] = useState("");
 
   // Delete Site State & Relational Warning
   const [deletingSite, setDeletingSite] = useState<Site | null>(null);
@@ -76,6 +77,7 @@ export default function SitesPage() {
     setEditLocation(site.location || "");
     setEditStatus(site.status);
     setEditEstimatedBudget(site.estimatedBudget ? site.estimatedBudget.toString() : "");
+    setEditOpeningBalance(site.openingBalance ? site.openingBalance.toString() : "");
   };
 
   const handleUpdateSite = (e: React.FormEvent) => {
@@ -88,6 +90,7 @@ export default function SitesPage() {
       location: editLocation.trim() || "City Center",
       status: editStatus,
       estimatedBudget: parseFloat(editEstimatedBudget) || 0,
+      openingBalance: parseFloat(editOpeningBalance) || 0,
     });
     setEditingSite(null);
   };
@@ -141,6 +144,7 @@ export default function SitesPage() {
   const [clientName, setClientName] = useState("");
   const [location, setLocation] = useState("");
   const [estimatedBudget, setEstimatedBudget] = useState("");
+  const [openingBalance, setOpeningBalance] = useState("");
 
   // Action Modals State with pre-selected site
   const [activeActionSiteId, setActiveActionSiteId] = useState<string>("");
@@ -206,12 +210,14 @@ export default function SitesPage() {
       location: location.trim() || "City Center",
       status: "ACTIVE",
       estimatedBudget: parseFloat(estimatedBudget) || 0,
+      openingBalance: parseFloat(openingBalance) || 0,
     });
 
     setName("");
     setClientName("");
     setLocation("");
     setEstimatedBudget("");
+    setOpeningBalance("");
     setIsAddSiteOpen(false);
   };
 
@@ -1059,14 +1065,27 @@ export default function SitesPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Estimated Project Budget (₹)</label>
-            <Input
-              type="number"
-              placeholder="e.g. 5000000"
-              value={estimatedBudget}
-              onChange={(e) => setEstimatedBudget(e.target.value)}
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Estimated Budget (₹)</label>
+              <Input
+                type="number"
+                placeholder="e.g. 5000000"
+                value={estimatedBudget}
+                onChange={(e) => setEstimatedBudget(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Opening Balance / Advance (₹) <span className="text-slate-400 font-normal">(Optional)</span>
+              </label>
+              <Input
+                type="number"
+                placeholder="e.g. 50000 (Optional)"
+                value={openingBalance}
+                onChange={(e) => setOpeningBalance(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
@@ -1136,6 +1155,18 @@ export default function SitesPage() {
                 onChange={(e) => setEditEstimatedBudget(e.target.value)}
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Opening Balance / Advance (₹) <span className="text-slate-400 font-normal">(Optional)</span>
+            </label>
+            <Input
+              type="number"
+              placeholder="e.g. 50000"
+              value={editOpeningBalance}
+              onChange={(e) => setEditOpeningBalance(e.target.value)}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">

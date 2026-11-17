@@ -255,7 +255,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
               }
               return { ...r, permissions: perms as PagePermission[] };
             });
-          } catch {}
+          } catch { }
         }
       }
     }
@@ -392,7 +392,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
       if (saved) {
         try {
           return JSON.parse(saved);
-        } catch {}
+        } catch { }
       }
     }
     return [];
@@ -434,7 +434,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
             setRoleState(parsed.role);
           }
         }
-      } catch {}
+      } catch { }
     }
   }, [users, roles]);
 
@@ -610,6 +610,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   const addSite = (site: Omit<Site, "id" | "createdAt">) => {
     const newSite: Site = {
       ...site,
+      openingBalance: site.openingBalance ? Number(site.openingBalance) : 0,
       id: `site-${Date.now()}`,
       createdAt: new Date().toISOString().split("T")[0],
     };
@@ -618,13 +619,14 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
       "CREATE_SITE",
       "Site",
       newSite.id,
-      `Added site "${newSite.name}" for client "${newSite.clientName}" with budget ₹${newSite.estimatedBudget}`
+      `Added site "${newSite.name}" for client "${newSite.clientName}" with budget ₹${newSite.estimatedBudget}${newSite.openingBalance ? ` (Opening Balance: ₹${newSite.openingBalance})` : ""}`
     );
   };
 
   const addVendor = (vendor: Omit<Vendor, "id" | "createdAt">) => {
     const newVendor: Vendor = {
       ...vendor,
+      openingBalance: vendor.openingBalance ? Number(vendor.openingBalance) : 0,
       id: `ven-${Date.now()}`,
       createdAt: new Date().toISOString().split("T")[0],
     };
@@ -633,13 +635,14 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
       "CREATE_VENDOR",
       "Vendor",
       newVendor.id,
-      `Added material vendor "${newVendor.name}" (${newVendor.tradeCategory})`
+      `Added material vendor "${newVendor.name}" (${newVendor.tradeCategory})${newVendor.openingBalance ? ` (Opening Balance: ₹${newVendor.openingBalance})` : ""}`
     );
   };
 
   const addWorker = (worker: Omit<Worker, "id" | "createdAt">) => {
     const newWorker: Worker = {
       ...worker,
+      openingBalance: worker.openingBalance ? Number(worker.openingBalance) : 0,
       id: `w-${Date.now()}`,
       createdAt: new Date().toISOString().split("T")[0],
     };
@@ -648,7 +651,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
       "CREATE_WORKER",
       "Worker",
       newWorker.id,
-      `Added worker "${newWorker.name}" (${newWorker.trade}) with daily wage ₹${newWorker.defaultDailyWage}`
+      `Added worker "${newWorker.name}" (${newWorker.trade}) with daily wage ₹${newWorker.defaultDailyWage}${newWorker.openingBalance ? ` (Opening Balance: ₹${newWorker.openingBalance})` : ""}`
     );
   };
 
@@ -1019,7 +1022,10 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
 
   // ─── Calculated Metrics ─────────────────────────────────────────────────
   const getVendorStats = (vendorId: string) => {
-    const totalPurchased = vendorPurchases
+    const ven = vendors.find((v) => v.id === vendorId);
+    const openingBalance = Number(ven?.openingBalance || 0);
+
+    const totalPurchased = openingBalance + vendorPurchases
       .filter((p) => p.vendorId === vendorId)
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
@@ -1035,7 +1041,10 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   };
 
   const getWorkerStats = (workerId: string) => {
-    const totalEarned = workerWorkLogs
+    const worker = workers.find((w) => w.id === workerId);
+    const openingBalance = Number(worker?.openingBalance || 0);
+
+    const totalEarned = openingBalance + workerWorkLogs
       .filter((w) => w.workerId === workerId)
       .reduce((sum, w) => sum + Number(w.wageAmount), 0);
 
@@ -1051,7 +1060,10 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   };
 
   const getSiteStats = (siteId: string) => {
-    const totalIncome = siteIncomes
+    const site = sites.find((s) => s.id === siteId);
+    const openingBalance = Number(site?.openingBalance || 0);
+
+    const totalIncome = openingBalance + siteIncomes
       .filter((i) => i.siteId === siteId)
       .reduce((sum, i) => sum + Number(i.amount), 0);
 
@@ -1080,7 +1092,12 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   };
 
   const getMasterCashFlow = () => {
-    const totalCashReceived = siteIncomes.reduce(
+    const totalSiteOpening = sites.reduce(
+      (sum, s) => sum + Number(s.openingBalance || 0),
+      0
+    );
+
+    const totalCashReceived = totalSiteOpening + siteIncomes.reduce(
       (sum, i) => sum + Number(i.amount),
       0
     );
@@ -1105,7 +1122,11 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
 
     const currentCashInHand = totalCashReceived - totalCashOutflow;
 
-    const totalMaterialPurchased = vendorPurchases.reduce(
+    const totalVendorOpening = vendors.reduce(
+      (sum, v) => sum + Number(v.openingBalance || 0),
+      0
+    );
+    const totalMaterialPurchased = totalVendorOpening + vendorPurchases.reduce(
       (sum, p) => sum + Number(p.amount),
       0
     );
@@ -1114,7 +1135,11 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
       totalMaterialPurchased - totalVendorCashPaid
     );
 
-    const totalLaborEarned = workerWorkLogs.reduce(
+    const totalWorkerOpening = workers.reduce(
+      (sum, w) => sum + Number(w.openingBalance || 0),
+      0
+    );
+    const totalLaborEarned = totalWorkerOpening + workerWorkLogs.reduce(
       (sum, w) => sum + Number(w.wageAmount),
       0
     );
@@ -1124,7 +1149,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     );
 
     // Bank vs Physical Cash breakdown
-    const bankInflow = siteIncomes
+    const bankInflow = totalSiteOpening + siteIncomes
       .filter(
         (i) =>
           i.paymentMode === "BANK_TRANSFER" ||
@@ -1224,9 +1249,8 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
         i % 10 === 0 ? "COMPLETED" : i % 15 === 0 ? "ON_HOLD" : "ACTIVE";
       newSites.push({
         id: `site-${i}`,
-        name: `${prefix} - Block ${String.fromCharCode(65 + (i % 26))}${
-          Math.floor(i / 26) + 1
-        }`,
+        name: `${prefix} - Block ${String.fromCharCode(65 + (i % 26))}${Math.floor(i / 26) + 1
+          }`,
         clientName: client,
         location: `${city} Sector ${((i * 7) % 80) + 1}`,
         status,

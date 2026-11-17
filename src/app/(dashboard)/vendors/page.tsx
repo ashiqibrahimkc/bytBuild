@@ -67,6 +67,7 @@ export default function VendorsPage() {
   const [editPhone, setEditPhone] = useState("");
   const [editTradeCategory, setEditTradeCategory] = useState("Cement Supplier");
   const [editNotes, setEditNotes] = useState("");
+  const [editOpeningBalance, setEditOpeningBalance] = useState("");
 
   // Delete Vendor State & Relational Integrity Check
   const [deletingVendor, setDeletingVendor] = useState<Vendor | null>(null);
@@ -78,6 +79,7 @@ export default function VendorsPage() {
     setEditPhone(vendor.phone || "");
     setEditTradeCategory(vendor.tradeCategory || "Cement Supplier");
     setEditNotes(vendor.notes || "");
+    setEditOpeningBalance(vendor.openingBalance ? vendor.openingBalance.toString() : "");
   };
 
   const handleUpdateVendor = (e: React.FormEvent) => {
@@ -89,6 +91,7 @@ export default function VendorsPage() {
       phone: editPhone.trim(),
       tradeCategory: editTradeCategory.trim() || "Materials",
       notes: editNotes.trim(),
+      openingBalance: parseFloat(editOpeningBalance) || 0,
     });
     setEditingVendor(null);
   };
@@ -143,6 +146,7 @@ export default function VendorsPage() {
   const [phone, setPhone] = useState("");
   const [tradeCategory, setTradeCategory] = useState("Cement Supplier");
   const [notes, setNotes] = useState("");
+  const [openingBalance, setOpeningBalance] = useState("");
 
   const handleCreateVendor = (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,11 +157,13 @@ export default function VendorsPage() {
       phone: phone.trim(),
       tradeCategory: tradeCategory.trim() || "Materials",
       notes: notes.trim(),
+      openingBalance: parseFloat(openingBalance) || 0,
     });
 
     setName("");
     setPhone("");
     setNotes("");
+    setOpeningBalance("");
     setIsAddVendorOpen(false);
   };
 
@@ -1067,13 +1073,26 @@ export default function VendorsPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Credit Terms &amp; Notes</label>
-            <Input
-              placeholder="e.g. 15-day credit period, delivery to all sites"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Opening Balance / Credit Owed (₹) <span className="text-slate-400 font-normal">(Optional)</span>
+              </label>
+              <Input
+                type="number"
+                placeholder="e.g. 15000 (Optional)"
+                value={openingBalance}
+                onChange={(e) => setOpeningBalance(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Credit Terms &amp; Notes</label>
+              <Input
+                placeholder="e.g. 15-day credit period"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
@@ -1134,12 +1153,25 @@ export default function VendorsPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Credit Terms &amp; Notes</label>
-            <Input
-              value={editNotes}
-              onChange={(e) => setEditNotes(e.target.value)}
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Opening Balance / Credit Owed (₹) <span className="text-slate-400 font-normal">(Optional)</span>
+              </label>
+              <Input
+                type="number"
+                placeholder="e.g. 15000"
+                value={editOpeningBalance}
+                onChange={(e) => setEditOpeningBalance(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Credit Terms &amp; Notes</label>
+              <Input
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
