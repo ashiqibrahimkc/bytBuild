@@ -238,26 +238,23 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   // Dynamic Roles
   const [roles, setRoles] = useState<CustomRole[]>(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
-      if (isFresh) {
-        const saved = localStorage.getItem("c_roles");
-        if (saved) {
-          try {
-            const parsed: CustomRole[] = JSON.parse(saved);
-            return parsed.map((r) => {
-              const perms = [...r.permissions];
-              if (r.name.toUpperCase() === "OWNER") {
-                if (!perms.includes("backup")) perms.push("backup");
-                if (!perms.includes("salary-slips")) perms.push("salary-slips");
-              }
-              if (r.name.toUpperCase() === "ACCOUNTANT") {
-                if (!perms.includes("salary-slips")) perms.push("salary-slips");
-                if (!perms.includes("backup")) perms.push("backup");
-              }
-              return { ...r, permissions: perms as PagePermission[] };
-            });
-          } catch { }
-        }
+      const saved = localStorage.getItem("c_roles");
+      if (saved) {
+        try {
+          const parsed: CustomRole[] = JSON.parse(saved);
+          return parsed.map((r) => {
+            const perms = [...r.permissions];
+            if (r.name.toUpperCase() === "OWNER") {
+              if (!perms.includes("backup")) perms.push("backup");
+              if (!perms.includes("salary-slips")) perms.push("salary-slips");
+            }
+            if (r.name.toUpperCase() === "ACCOUNTANT") {
+              if (!perms.includes("salary-slips")) perms.push("salary-slips");
+              if (!perms.includes("backup")) perms.push("backup");
+            }
+            return { ...r, permissions: perms as PagePermission[] };
+          });
+        } catch { }
       }
     }
     return INITIAL_ROLES;
@@ -266,10 +263,11 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   // App Users with credentials
   const [users, setUsers] = useState<AppUser[]>(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
-      if (isFresh) {
-        const saved = localStorage.getItem("c_users");
-        if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem("c_users");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch { }
       }
     }
     return INITIAL_USERS;
@@ -278,22 +276,24 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   // Audit Logs
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
-      if (isFresh) {
-        const saved = localStorage.getItem("c_audit_logs");
-        if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem("c_audit_logs");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch { }
       }
     }
     return INITIAL_AUDIT_LOGS;
   });
 
-  // Data collections - Start Freshly (Empty)
+  // Data collections - Persistent across page reloads and browser sessions
   const [sites, setSites] = useState<Site[]>(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
-      if (isFresh) {
-        const saved = localStorage.getItem("c_sites");
-        if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem("c_sites");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch { }
       }
     }
     return INITIAL_SITES;
@@ -301,10 +301,11 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
 
   const [vendors, setVendors] = useState<Vendor[]>(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
-      if (isFresh) {
-        const saved = localStorage.getItem("c_vendors");
-        if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem("c_vendors");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch { }
       }
     }
     return INITIAL_VENDORS;
@@ -312,10 +313,11 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
 
   const [workers, setWorkers] = useState<Worker[]>(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
-      if (isFresh) {
-        const saved = localStorage.getItem("c_workers");
-        if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem("c_workers");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch { }
       }
     }
     return INITIAL_WORKERS;
@@ -323,10 +325,11 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
 
   const [vendorPurchases, setVendorPurchases] = useState<VendorPurchase[]>(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
-      if (isFresh) {
-        const saved = localStorage.getItem("c_purchases");
-        if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem("c_purchases");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch { }
       }
     }
     return INITIAL_PURCHASES;
@@ -334,10 +337,11 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
 
   const [vendorPayments, setVendorPayments] = useState<VendorPayment[]>(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
-      if (isFresh) {
-        const saved = localStorage.getItem("c_vendor_payments");
-        if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem("c_vendor_payments");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch { }
       }
     }
     return INITIAL_VENDOR_PAYMENTS;
@@ -345,10 +349,11 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
 
   const [workerWorkLogs, setWorkerWorkLogs] = useState<WorkerWorkLog[]>(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
-      if (isFresh) {
-        const saved = localStorage.getItem("c_work_logs");
-        if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem("c_work_logs");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch { }
       }
     }
     return INITIAL_WORK_LOGS;
@@ -356,10 +361,11 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
 
   const [workerPayments, setWorkerPayments] = useState<WorkerPayment[]>(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
-      if (isFresh) {
-        const saved = localStorage.getItem("c_worker_payments");
-        if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem("c_worker_payments");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch { }
       }
     }
     return INITIAL_WORKER_PAYMENTS;
@@ -367,10 +373,11 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
 
   const [siteIncomes, setSiteIncomes] = useState<SiteIncome[]>(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
-      if (isFresh) {
-        const saved = localStorage.getItem("c_site_incomes");
-        if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem("c_site_incomes");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch { }
       }
     }
     return INITIAL_INCOMES;
@@ -378,10 +385,11 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
 
   const [companyExpenses, setCompanyExpenses] = useState<CompanyExpense[]>(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v6");
-      if (isFresh) {
-        const saved = localStorage.getItem("c_company_expenses");
-        if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem("c_company_expenses");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch { }
       }
     }
     return INITIAL_EXPENSES;
@@ -399,20 +407,27 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     return [];
   });
 
-  // Sync to LocalStorage
-  useEffect(() => { localStorage.setItem("c_roles", JSON.stringify(roles)); }, [roles]);
-  useEffect(() => { localStorage.setItem("c_users", JSON.stringify(users)); }, [users]);
-  useEffect(() => { localStorage.setItem("c_audit_logs", JSON.stringify(auditLogs)); }, [auditLogs]);
-  useEffect(() => { localStorage.setItem("c_sites", JSON.stringify(sites)); }, [sites]);
-  useEffect(() => { localStorage.setItem("c_vendors", JSON.stringify(vendors)); }, [vendors]);
-  useEffect(() => { localStorage.setItem("c_workers", JSON.stringify(workers)); }, [workers]);
-  useEffect(() => { localStorage.setItem("c_purchases", JSON.stringify(vendorPurchases)); }, [vendorPurchases]);
-  useEffect(() => { localStorage.setItem("c_vendor_payments", JSON.stringify(vendorPayments)); }, [vendorPayments]);
-  useEffect(() => { localStorage.setItem("c_work_logs", JSON.stringify(workerWorkLogs)); }, [workerWorkLogs]);
-  useEffect(() => { localStorage.setItem("c_worker_payments", JSON.stringify(workerPayments)); }, [workerPayments]);
-  useEffect(() => { localStorage.setItem("c_site_incomes", JSON.stringify(siteIncomes)); }, [siteIncomes]);
-  useEffect(() => { localStorage.setItem("c_company_expenses", JSON.stringify(companyExpenses)); }, [companyExpenses]);
-  useEffect(() => { localStorage.setItem("c_salary_slips", JSON.stringify(salarySlips)); }, [salarySlips]);
+  // Client hydration flag to prevent premature overwrites during SSR
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // Sync to LocalStorage (guarded by isHydrated to protect against wiping data on load)
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_roles", JSON.stringify(roles)); }, [roles, isHydrated]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_users", JSON.stringify(users)); }, [users, isHydrated]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_audit_logs", JSON.stringify(auditLogs)); }, [auditLogs, isHydrated]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_sites", JSON.stringify(sites)); }, [sites, isHydrated]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_vendors", JSON.stringify(vendors)); }, [vendors, isHydrated]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_workers", JSON.stringify(workers)); }, [workers, isHydrated]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_purchases", JSON.stringify(vendorPurchases)); }, [vendorPurchases, isHydrated]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_vendor_payments", JSON.stringify(vendorPayments)); }, [vendorPayments, isHydrated]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_work_logs", JSON.stringify(workerWorkLogs)); }, [workerWorkLogs, isHydrated]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_worker_payments", JSON.stringify(workerPayments)); }, [workerPayments, isHydrated]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_site_incomes", JSON.stringify(siteIncomes)); }, [siteIncomes, isHydrated]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_company_expenses", JSON.stringify(companyExpenses)); }, [companyExpenses, isHydrated]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("c_salary_slips", JSON.stringify(salarySlips)); }, [salarySlips, isHydrated]);
 
   // Load session user from localStorage
   useEffect(() => {
