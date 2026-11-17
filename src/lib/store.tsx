@@ -28,6 +28,7 @@ interface ConstructionContextType {
   setCurrentUser: (user: AppUser | null) => void;
   companyName: string;
   setCompanyName: (name: string) => void;
+  isDbLoading?: boolean;
 
   roles: CustomRole[];
   users: AppUser[];
@@ -235,199 +236,77 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
-  // Dynamic Roles
-  const [roles, setRoles] = useState<CustomRole[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_roles");
-      if (saved) {
-        try {
-          const parsed: CustomRole[] = JSON.parse(saved);
-          return parsed.map((r) => {
-            const perms = [...r.permissions];
-            if (r.name.toUpperCase() === "OWNER") {
-              if (!perms.includes("backup")) perms.push("backup");
-              if (!perms.includes("salary-slips")) perms.push("salary-slips");
-            }
-            if (r.name.toUpperCase() === "ACCOUNTANT") {
-              if (!perms.includes("salary-slips")) perms.push("salary-slips");
-              if (!perms.includes("backup")) perms.push("backup");
-            }
-            return { ...r, permissions: perms as PagePermission[] };
-          });
-        } catch { }
+  // ─── Database-Backed Live Collections ────────────────────────────────────
+  const [roles, setRoles] = useState<CustomRole[]>(INITIAL_ROLES);
+  const [users, setUsers] = useState<AppUser[]>(INITIAL_USERS);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [vendorPurchases, setVendorPurchases] = useState<VendorPurchase[]>([]);
+  const [vendorPayments, setVendorPayments] = useState<VendorPayment[]>([]);
+  const [workerWorkLogs, setWorkerWorkLogs] = useState<WorkerWorkLog[]>([]);
+  const [workerPayments, setWorkerPayments] = useState<WorkerPayment[]>([]);
+  const [siteIncomes, setSiteIncomes] = useState<SiteIncome[]>([]);
+  const [companyExpenses, setCompanyExpenses] = useState<CompanyExpense[]>([]);
+  const [salarySlips, setSalarySlips] = useState<SalarySlip[]>([]);
+  const [isDbLoading, setIsDbLoading] = useState(true);
+
+  // API Mutation Helper to execute transactions in PostgreSQL database
+  const apiMutation = useCallback(async (action: string, payload: any) => {
+    try {
+      const res = await fetch("/api/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, payload }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error(`[DB Error] Mutation ${action} failed:`, err);
+        return null;
       }
+      return await res.json().catch(() => null);
+    } catch (err) {
+      console.error(`[DB Network Error] Mutation ${action}:`, err);
+      return null;
     }
-    return INITIAL_ROLES;
-  });
-
-  // App Users with credentials
-  const [users, setUsers] = useState<AppUser[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_users");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch { }
-      }
-    }
-    return INITIAL_USERS;
-  });
-
-  // Audit Logs
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_audit_logs");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch { }
-      }
-    }
-    return INITIAL_AUDIT_LOGS;
-  });
-
-  // Data collections - Persistent across page reloads and browser sessions
-  const [sites, setSites] = useState<Site[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_sites");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch { }
-      }
-    }
-    return INITIAL_SITES;
-  });
-
-  const [vendors, setVendors] = useState<Vendor[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_vendors");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch { }
-      }
-    }
-    return INITIAL_VENDORS;
-  });
-
-  const [workers, setWorkers] = useState<Worker[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_workers");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch { }
-      }
-    }
-    return INITIAL_WORKERS;
-  });
-
-  const [vendorPurchases, setVendorPurchases] = useState<VendorPurchase[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_purchases");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch { }
-      }
-    }
-    return INITIAL_PURCHASES;
-  });
-
-  const [vendorPayments, setVendorPayments] = useState<VendorPayment[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_vendor_payments");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch { }
-      }
-    }
-    return INITIAL_VENDOR_PAYMENTS;
-  });
-
-  const [workerWorkLogs, setWorkerWorkLogs] = useState<WorkerWorkLog[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_work_logs");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch { }
-      }
-    }
-    return INITIAL_WORK_LOGS;
-  });
-
-  const [workerPayments, setWorkerPayments] = useState<WorkerPayment[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_worker_payments");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch { }
-      }
-    }
-    return INITIAL_WORKER_PAYMENTS;
-  });
-
-  const [siteIncomes, setSiteIncomes] = useState<SiteIncome[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_site_incomes");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch { }
-      }
-    }
-    return INITIAL_INCOMES;
-  });
-
-  const [companyExpenses, setCompanyExpenses] = useState<CompanyExpense[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_company_expenses");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch { }
-      }
-    }
-    return INITIAL_EXPENSES;
-  });
-
-  const [salarySlips, setSalarySlips] = useState<SalarySlip[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("c_salary_slips");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch { }
-      }
-    }
-    return [];
-  });
-
-  // Client hydration flag to prevent premature overwrites during SSR
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  useEffect(() => {
-    setIsHydrated(true);
   }, []);
 
-  // Sync to LocalStorage (guarded by isHydrated to protect against wiping data on load)
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_roles", JSON.stringify(roles)); }, [roles, isHydrated]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_users", JSON.stringify(users)); }, [users, isHydrated]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_audit_logs", JSON.stringify(auditLogs)); }, [auditLogs, isHydrated]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_sites", JSON.stringify(sites)); }, [sites, isHydrated]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_vendors", JSON.stringify(vendors)); }, [vendors, isHydrated]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_workers", JSON.stringify(workers)); }, [workers, isHydrated]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_purchases", JSON.stringify(vendorPurchases)); }, [vendorPurchases, isHydrated]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_vendor_payments", JSON.stringify(vendorPayments)); }, [vendorPayments, isHydrated]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_work_logs", JSON.stringify(workerWorkLogs)); }, [workerWorkLogs, isHydrated]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_worker_payments", JSON.stringify(workerPayments)); }, [workerPayments, isHydrated]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_site_incomes", JSON.stringify(siteIncomes)); }, [siteIncomes, isHydrated]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_company_expenses", JSON.stringify(companyExpenses)); }, [companyExpenses, isHydrated]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("c_salary_slips", JSON.stringify(salarySlips)); }, [salarySlips, isHydrated]);
+  // Fetch all live records directly from PostgreSQL Database on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadDatabaseData() {
+      try {
+        const res = await fetch("/api/data");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data && isMounted) {
+            setSites(json.data.sites || []);
+            setVendors(json.data.vendors || []);
+            setWorkers(json.data.workers || []);
+            setVendorPurchases(json.data.vendorPurchases || []);
+            setVendorPayments(json.data.vendorPayments || []);
+            setWorkerWorkLogs(json.data.workerWorkLogs || []);
+            setWorkerPayments(json.data.workerPayments || []);
+            setSiteIncomes(json.data.siteIncomes || []);
+            setCompanyExpenses(json.data.companyExpenses || []);
+            setSalarySlips(json.data.salarySlips || []);
+            if (json.data.roles && json.data.roles.length > 0) setRoles(json.data.roles);
+            if (json.data.users) setUsers(json.data.users);
+            if (json.data.auditLogs) setAuditLogs(json.data.auditLogs);
+          }
+        }
+      } catch (err) {
+        console.error("[DB Error] Failed to load data from database:", err);
+      } finally {
+        if (isMounted) setIsDbLoading(false);
+      }
+    }
+    loadDatabaseData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Load session user from localStorage
   useEffect(() => {
@@ -504,8 +383,9 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
         createdAt: formatted,
       };
       setAuditLogs((prev) => [newLog, ...prev]);
+      apiMutation("ADD_AUDIT_LOG", newLog);
     },
-    [currentUser, role]
+    [currentUser, role, apiMutation]
   );
 
   // ─── RBAC Access Checker ────────────────────────────────────────────────
@@ -569,6 +449,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     setRoles((prev) =>
       prev.map((r) => (r.id === roleId ? { ...r, permissions } : r))
     );
+    apiMutation("UPDATE_ROLE_PERMS", { roleId, permissions });
     logAudit(
       "UPDATE_PERMISSIONS",
       "CustomRole",
@@ -585,17 +466,25 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     );
     if (exists) return false;
 
+    const tempId = `user-${Date.now()}`;
     const newUser: AppUser = {
       ...userData,
-      id: `user-${Date.now()}`,
+      id: tempId,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setUsers((prev) => [...prev, newUser]);
+
+    apiMutation("ADD_USER", userData).then((res) => {
+      if (res?.success && res.item) {
+        setUsers((prev) => prev.map((u) => (u.id === tempId ? res.item : u)));
+      }
+    });
+
     const assignedRole = roles.find((r) => r.id === newUser.roleId);
     logAudit(
       "CREATE_USER",
       "AppUser",
-      newUser.id,
+      tempId,
       `Created user account "${newUser.username}" (${newUser.fullName}) with role "${assignedRole?.displayName || "Member"}"`
     );
     return true;
@@ -604,6 +493,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   const deleteAppUser = (userId: string) => {
     const target = users.find((u) => u.id === userId);
     setUsers((prev) => prev.filter((u) => u.id !== userId));
+    apiMutation("DELETE_USER", { id: userId });
     logAudit(
       "DELETE_USER",
       "AppUser",
@@ -622,51 +512,78 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     return matched ?? null;
   };
 
-  // ─── Operational Actions ────────────────────────────────────────────────
+  // ─── Operational Actions (Direct Database Sync) ─────────────────────────
   const addSite = (site: Omit<Site, "id" | "createdAt">) => {
+    const openingBalance = site.openingBalance ? Number(site.openingBalance) : 0;
+    const tempId = `site-${Date.now()}`;
     const newSite: Site = {
       ...site,
-      openingBalance: site.openingBalance ? Number(site.openingBalance) : 0,
-      id: `site-${Date.now()}`,
+      openingBalance,
+      id: tempId,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setSites((prev) => [newSite, ...prev]);
+
+    apiMutation("ADD_SITE", { ...site, openingBalance }).then((res) => {
+      if (res?.success && res.item) {
+        setSites((prev) => prev.map((s) => (s.id === tempId ? res.item : s)));
+      }
+    });
+
     logAudit(
       "CREATE_SITE",
       "Site",
-      newSite.id,
+      tempId,
       `Added site "${newSite.name}" for client "${newSite.clientName}" with budget ₹${newSite.estimatedBudget}${newSite.openingBalance ? ` (Opening Balance: ₹${newSite.openingBalance})` : ""}`
     );
   };
 
   const addVendor = (vendor: Omit<Vendor, "id" | "createdAt">) => {
+    const openingBalance = vendor.openingBalance ? Number(vendor.openingBalance) : 0;
+    const tempId = `ven-${Date.now()}`;
     const newVendor: Vendor = {
       ...vendor,
-      openingBalance: vendor.openingBalance ? Number(vendor.openingBalance) : 0,
-      id: `ven-${Date.now()}`,
+      openingBalance,
+      id: tempId,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setVendors((prev) => [newVendor, ...prev]);
+
+    apiMutation("ADD_VENDOR", { ...vendor, openingBalance }).then((res) => {
+      if (res?.success && res.item) {
+        setVendors((prev) => prev.map((v) => (v.id === tempId ? res.item : v)));
+      }
+    });
+
     logAudit(
       "CREATE_VENDOR",
       "Vendor",
-      newVendor.id,
+      tempId,
       `Added material vendor "${newVendor.name}" (${newVendor.tradeCategory})${newVendor.openingBalance ? ` (Opening Balance: ₹${newVendor.openingBalance})` : ""}`
     );
   };
 
   const addWorker = (worker: Omit<Worker, "id" | "createdAt">) => {
+    const openingBalance = worker.openingBalance ? Number(worker.openingBalance) : 0;
+    const tempId = `w-${Date.now()}`;
     const newWorker: Worker = {
       ...worker,
-      openingBalance: worker.openingBalance ? Number(worker.openingBalance) : 0,
-      id: `w-${Date.now()}`,
+      openingBalance,
+      id: tempId,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setWorkers((prev) => [newWorker, ...prev]);
+
+    apiMutation("ADD_WORKER", { ...worker, openingBalance }).then((res) => {
+      if (res?.success && res.item) {
+        setWorkers((prev) => prev.map((w) => (w.id === tempId ? res.item : w)));
+      }
+    });
+
     logAudit(
       "CREATE_WORKER",
       "Worker",
-      newWorker.id,
+      tempId,
       `Added worker "${newWorker.name}" (${newWorker.trade}) with daily wage ₹${newWorker.defaultDailyWage}${newWorker.openingBalance ? ` (Opening Balance: ₹${newWorker.openingBalance})` : ""}`
     );
   };
@@ -675,6 +592,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     setSites((prev) =>
       prev.map((s) => (s.id === id ? { ...s, ...updatedFields } : s))
     );
+    apiMutation("UPDATE_SITE", { id, ...updatedFields });
     const existing = sites.find((s) => s.id === id);
     logAudit(
       "UPDATE_SITE",
@@ -714,6 +632,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     }
 
     setSites((prev) => prev.filter((s) => s.id !== id));
+    apiMutation("DELETE_SITE", { id, forceCascade });
     logAudit(
       "DELETE_SITE",
       "Site",
@@ -732,6 +651,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     setVendors((prev) =>
       prev.map((v) => (v.id === id ? { ...v, ...updatedFields } : v))
     );
+    apiMutation("UPDATE_VENDOR", { id, ...updatedFields });
     const existing = vendors.find((v) => v.id === id);
     logAudit(
       "UPDATE_VENDOR",
@@ -764,6 +684,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     }
 
     setVendors((prev) => prev.filter((v) => v.id !== id));
+    apiMutation("DELETE_VENDOR", { id, forceCascade });
     logAudit(
       "DELETE_VENDOR",
       "Vendor",
@@ -782,6 +703,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     setWorkers((prev) =>
       prev.map((w) => (w.id === id ? { ...w, ...updatedFields } : w))
     );
+    apiMutation("UPDATE_WORKER", { id, ...updatedFields });
     const existing = workers.find((w) => w.id === id);
     logAudit(
       "UPDATE_WORKER",
@@ -814,6 +736,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     }
 
     setWorkers((prev) => prev.filter((w) => w.id !== id));
+    apiMutation("DELETE_WORKER", { id, forceCascade });
     logAudit(
       "DELETE_WORKER",
       "Worker",
@@ -829,106 +752,148 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   };
 
   const recordMaterialPurchase = (purchase: Omit<VendorPurchase, "id" | "createdAt">) => {
+    const tempId = `pur-${Date.now()}`;
     const newPurchase: VendorPurchase = {
       ...purchase,
-      id: `pur-${Date.now()}`,
+      id: tempId,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setVendorPurchases((prev) => [newPurchase, ...prev]);
+
+    apiMutation("ADD_PURCHASE", purchase).then((res) => {
+      if (res?.success && res.item) {
+        setVendorPurchases((prev) => prev.map((p) => (p.id === tempId ? res.item : p)));
+      }
+    });
 
     const ven = vendors.find((v) => v.id === purchase.vendorId);
     const site = sites.find((s) => s.id === purchase.siteId);
     logAudit(
       "PURCHASE_MATERIAL",
       "VendorPurchase",
-      newPurchase.id,
+      tempId,
       `Recorded purchase of ₹${purchase.amount} from "${ven?.name || "Vendor"}" for site "${site?.name || "Site"}" (Voucher: #${purchase.voucherNo || "N/A"})`
     );
   };
 
   const recordVendorPayment = (payment: Omit<VendorPayment, "id" | "createdAt">) => {
+    const tempId = `vp-${Date.now()}`;
     const newPayment: VendorPayment = {
       ...payment,
-      id: `vp-${Date.now()}`,
+      id: tempId,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setVendorPayments((prev) => [newPayment, ...prev]);
+
+    apiMutation("ADD_VENDOR_PAYMENT", payment).then((res) => {
+      if (res?.success && res.item) {
+        setVendorPayments((prev) => prev.map((p) => (p.id === tempId ? res.item : p)));
+      }
+    });
 
     const ven = vendors.find((v) => v.id === payment.vendorId);
     logAudit(
       "DISBURSE_PAYMENT",
       "VendorPayment",
-      newPayment.id,
+      tempId,
       `Paid ₹${payment.amount} via ${payment.paymentMode} to vendor "${ven?.name || "Vendor"}" (Voucher: #${payment.voucherNo || "N/A"})`
     );
   };
 
   const assignWorkerWorkLog = (log: Omit<WorkerWorkLog, "id" | "createdAt">) => {
+    const tempId = `wl-${Date.now()}`;
     const newLog: WorkerWorkLog = {
       ...log,
-      id: `wl-${Date.now()}`,
+      id: tempId,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setWorkerWorkLogs((prev) => [newLog, ...prev]);
+
+    apiMutation("ADD_WORK_LOG", log).then((res) => {
+      if (res?.success && res.item) {
+        setWorkerWorkLogs((prev) => prev.map((w) => (w.id === tempId ? res.item : w)));
+      }
+    });
 
     const worker = workers.find((w) => w.id === log.workerId);
     const site = sites.find((s) => s.id === log.siteId);
     logAudit(
       "WAGE_LOG",
       "WorkerWorkLog",
-      newLog.id,
+      tempId,
       `Assigned worker "${worker?.name || "Worker"}" to site "${site?.name || "Site"}" with wage ₹${log.wageAmount}`
     );
   };
 
   const recordWorkerPayment = (payment: Omit<WorkerPayment, "id" | "createdAt">) => {
+    const tempId = `wp-${Date.now()}`;
     const newPayment: WorkerPayment = {
       ...payment,
-      id: `wp-${Date.now()}`,
+      id: tempId,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setWorkerPayments((prev) => [newPayment, ...prev]);
+
+    apiMutation("ADD_WORKER_PAYMENT", payment).then((res) => {
+      if (res?.success && res.item) {
+        setWorkerPayments((prev) => prev.map((p) => (p.id === tempId ? res.item : p)));
+      }
+    });
 
     const worker = workers.find((w) => w.id === payment.workerId);
     logAudit(
       "DISBURSE_PAYMENT",
       "WorkerPayment",
-      newPayment.id,
+      tempId,
       `Disbursed ₹${payment.amount} wage via ${payment.paymentMode} to worker "${worker?.name || "Worker"}" (Voucher: #${payment.voucherNo || "N/A"})`
     );
   };
 
   const recordSiteIncome = (income: Omit<SiteIncome, "id" | "createdAt">) => {
+    const tempId = `inc-${Date.now()}`;
     const newIncome: SiteIncome = {
       ...income,
-      id: `inc-${Date.now()}`,
+      id: tempId,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setSiteIncomes((prev) => [newIncome, ...prev]);
+
+    apiMutation("ADD_SITE_INCOME", income).then((res) => {
+      if (res?.success && res.item) {
+        setSiteIncomes((prev) => prev.map((i) => (i.id === tempId ? res.item : i)));
+      }
+    });
 
     const site = sites.find((s) => s.id === income.siteId);
     logAudit(
       "RECORD_INCOME",
       "SiteIncome",
-      newIncome.id,
+      tempId,
       `Received ₹${income.amount} client advance via ${income.paymentMode} for site "${site?.name || "Site"}" (Ref: ${income.referenceNo || "N/A"})`
     );
   };
 
   const recordCompanyExpense = (expense: Omit<CompanyExpense, "id" | "createdAt">) => {
+    const tempId = `exp-${Date.now()}`;
     const newExpense: CompanyExpense = {
       ...expense,
-      id: `exp-${Date.now()}`,
+      id: tempId,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setCompanyExpenses((prev) => [newExpense, ...prev]);
+
+    apiMutation("ADD_EXPENSE", expense).then((res) => {
+      if (res?.success && res.item) {
+        setCompanyExpenses((prev) => prev.map((e) => (e.id === tempId ? res.item : e)));
+      }
+    });
 
     const site = sites.find((s) => s.id === expense.siteId);
     const worker = expense.workerId ? workers.find((w) => w.id === expense.workerId) : null;
     logAudit(
       "RECORD_OVERHEAD",
       "CompanyExpense",
-      newExpense.id,
+      tempId,
       expense.category === "SALARY_ADVANCE" && worker
         ? `Paid salary advance of ₹${expense.amount} to worker "${worker.name}" (${worker.trade}) via ${expense.paymentMode}`
         : `Recorded overhead expense of ₹${expense.amount} under "${expense.category}" via ${expense.paymentMode}${site ? ` allocated to site "${site.name}"` : " (Central Overhead)"}`
@@ -1011,6 +976,10 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     };
     setWorkerPayments((prev) => [newWorkerPayment, ...prev]);
 
+    // Sync salary slip and worker payment to PostgreSQL database
+    apiMutation("ADD_SALARY_SLIP", newSlip);
+    apiMutation("ADD_WORKER_PAYMENT", newWorkerPayment);
+
     logAudit(
       "GENERATE_SALARY_SLIP",
       "SalarySlip",
@@ -1028,6 +997,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   const deleteSalarySlip = (slipId: string) => {
     const target = salarySlips.find((s) => s.id === slipId);
     setSalarySlips((prev) => prev.filter((s) => s.id !== slipId));
+    apiMutation("DELETE_SALARY_SLIP", { id: slipId });
     logAudit(
       "DELETE_SALARY_SLIP",
       "SalarySlip",
@@ -1556,6 +1526,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
         setCurrentUser,
         companyName,
         setCompanyName,
+        isDbLoading,
         roles,
         users,
         auditLogs,
