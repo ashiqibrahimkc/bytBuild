@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,12 +25,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const isSupabaseConfigured = Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("[YOUR-PROJECT-REF]") &&
-    !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project")
-  );
 
   async function completeLogin(
     username: string,
@@ -59,109 +52,89 @@ export default function LoginPage() {
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
+
+    const cleanId = identifier.trim();
+    if (!cleanId || !password) {
+      setError("Please enter your username/email and password.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
-    // 1. Authenticate with server database API (Prisma / Supabase PostgreSQL seeded users)
+    // 1. Authenticate with server PostgreSQL database API (Prisma AppUser)
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, password }),
+        body: JSON.stringify({ identifier: cleanId, password }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          await completeLogin(
-            data.user.username,
-            data.user.fullName,
-            data.user.email,
-            data.user.role
-          );
-          return;
-        }
-      }
-    } catch {
-      // Fallback to local / client checks if offline
-    }
+      const data = await res.json().catch(() => null);
 
-    // 2. Check dynamically registered user accounts in browser
-    let usersList: Array<{
-      username: string;
-      password?: string;
-      fullName: string;
-      email: string;
-      role: string;
-    }> = [];
-
-    if (typeof window !== "undefined") {
-      const savedUsers = localStorage.getItem("c_users");
-      const savedRoles = localStorage.getItem("c_roles");
-      if (savedUsers) {
-        try {
-          const parsedUsers = JSON.parse(savedUsers);
-          const parsedRoles = savedRoles ? JSON.parse(savedRoles) : [];
-          usersList = parsedUsers.map((u: any) => {
-            const r = parsedRoles.find((rl: any) => rl.id === u.roleId);
-            return {
-              username: u.username,
-              password: u.password,
-              fullName: u.fullName,
-              email: u.email || `${u.username}@byten.in`,
-              role: r?.name || "OWNER",
-            };
-          });
-        } catch { }
-      }
-    }
-
-    const matchedUser = usersList.find(
-      (u) =>
-        (u.username.toLowerCase() === identifier.trim().toLowerCase() ||
-          u.email.toLowerCase() === identifier.trim().toLowerCase()) &&
-        u.password === password
-    );
-
-    if (matchedUser) {
-      await completeLogin(
-        matchedUser.username,
-        matchedUser.fullName,
-        matchedUser.email,
-        matchedUser.role
-      );
-      return;
-    }
-
-    // 2. If Supabase is configured and local match not found, try Supabase Auth
-    if (isSupabaseConfigured) {
-      try {
-        const supabase = createClient();
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email: identifier,
-          password,
-        });
-
-        if (signInError) {
-          setError(signInError.message);
-          setLoading(false);
-          return;
-        }
-
-        const role = data.user?.user_metadata?.role?.toUpperCase() || "MANAGER";
+      if (res.ok && data?.success && data?.user) {
         await completeLogin(
-          identifier.split("@")[0],
-          data.user?.user_metadata?.full_name || identifier,
-          identifier,
-          role
+          data.user.username,
+          data.user.fullName,
+          data.user.email,
+          data.user.role
         );
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Authentication error occurred";
-        setError(message);
-        setLoading(false);
+        return;
       }
-    } else {
-      setError("Invalid username or password. Please check your credentials.");
+
+      // If credentials rejected or server error
+      if (data && data.message) {
+        setError(data.message);
+        setLoading(false);
+        return;
+      }
+
+      setError("Invalid username or password. Please verify your credentials.");
+      setLoading(false);
+    } catch (err: unknown) {
+      console.error("Login authentication network error:", err);
+
+      // Emergency offline fallback: check locally cached accounts if any
+      let matchedUser: any = null;
+      if (typeof window !== "undefined") {
+        try {
+          const savedUsers = localStorage.getItem("c_users");
+          const savedRoles = localStorage.getItem("c_roles");
+          if (savedUsers) {
+            const parsedUsers = JSON.parse(savedUsers);
+            const parsedRoles = savedRoles ? JSON.parse(savedRoles) : [];
+            const usersList = parsedUsers.map((u: any) => {
+              const r = parsedRoles.find((rl: any) => rl.id === u.roleId);
+              return {
+                username: u.username,
+                password: u.password,
+                fullName: u.fullName,
+                email: u.email || `${u.username}@byten.in`,
+                role: r?.name || "OWNER",
+              };
+            });
+            matchedUser = usersList.find(
+              (u: any) =>
+                (u.username.toLowerCase() === cleanId.toLowerCase() ||
+                  u.email.toLowerCase() === cleanId.toLowerCase()) &&
+                u.password === password
+            );
+          }
+        } catch {}
+      }
+
+      if (matchedUser) {
+        await completeLogin(
+          matchedUser.username,
+          matchedUser.fullName,
+          matchedUser.email,
+          matchedUser.role
+        );
+        return;
+      }
+
+      setError("Unable to connect to authentication server. Please check your network connection.");
       setLoading(false);
     }
   }
@@ -356,6 +329,26 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
+
+          {/* Seeded Workspace Credentials Pill */}
+          <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="font-semibold text-slate-700">Seeded Admin Account:</span>
+              <div className="text-[11px] font-mono text-slate-500">
+                User: <span className="font-semibold text-amber-800">admin</span> • Pass: <span className="font-semibold text-amber-800">password123</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIdentifier("admin");
+                setPassword("password123");
+              }}
+              className="px-2.5 py-1 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-lg border border-amber-300 transition-colors cursor-pointer"
+            >
+              Fill Admin
+            </button>
+          </div>
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
             <span className="flex items-center gap-1.5">

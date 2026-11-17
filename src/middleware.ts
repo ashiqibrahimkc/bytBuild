@@ -15,20 +15,29 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // 1. Primary authentication check: PostgreSQL session cookies
+  const hasSessionCookie =
+    request.cookies.has("bytbuild_session") || request.cookies.has("buildflow_session");
+
+  let isAuthenticated = hasSessionCookie;
+
+  // 2. Optional Supabase Auth fallback (only if valid anon public key is configured)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const isSupabaseConfigured =
+  const isSupabaseConfigured = Boolean(
     supabaseUrl &&
     supabaseKey &&
     !supabaseUrl.includes("[YOUR-PROJECT-REF]") &&
     !supabaseUrl.includes("your-project") &&
-    supabaseUrl.startsWith("http");
+    !supabaseKey.includes("your-anon") &&
+    !supabaseKey.includes("[YOUR-ANON") &&
+    supabaseKey.length > 30 &&
+    supabaseUrl.startsWith("http")
+  );
 
-  let isAuthenticated = false;
-
-  if (isSupabaseConfigured) {
+  if (!isAuthenticated && isSupabaseConfigured) {
     try {
-      const supabase = createServerClient(supabaseUrl, supabaseKey, {
+      const supabase = createServerClient(supabaseUrl!, supabaseKey!, {
         cookies: {
           getAll() {
             return request.cookies.getAll();
@@ -51,20 +60,10 @@ export async function middleware(request: NextRequest) {
 
       if (user) {
         isAuthenticated = true;
-      } else {
-        // Fall back to session cookie for database authenticated accounts
-        isAuthenticated =
-          request.cookies.has("bytbuild_session") || request.cookies.has("buildflow_session");
       }
     } catch {
-      // In case of network / URL issues, fall back to cookie check
-      isAuthenticated =
-        request.cookies.has("bytbuild_session") || request.cookies.has("buildflow_session");
+      // In case of network / URL issues, fall back cleanly
     }
-  } else {
-    // If Supabase credentials are placeholder in development, check session cookie
-    isAuthenticated =
-      request.cookies.has("bytbuild_session") || request.cookies.has("buildflow_session");
   }
 
   // If on login page and already authenticated, redirect to dashboard

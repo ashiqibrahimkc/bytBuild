@@ -24,7 +24,6 @@ import {
   FileCheck,
 } from "lucide-react";
 import { useConstruction } from "@/lib/store";
-import { createClient } from "@/lib/supabase/client";
 import { PagePermission } from "@/lib/types";
 
 const ALL_NAV_LINKS: {
@@ -81,12 +80,6 @@ export default function Sidebar({
         });
         if (parsed.role) setRole(parsed.role);
       }
-      const supabase = createClient();
-      supabase.auth.getUser().then(({ data }) => {
-        if (data?.user?.email) {
-          setUserDisplay((prev) => ({ ...prev, name: data.user.email ?? prev.name }));
-        }
-      });
     } catch { }
   }, [setRole]);
 
@@ -96,12 +89,9 @@ export default function Sidebar({
   }, [pathname]);
 
   async function handleSignOut() {
-    try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-    } catch { }
-    document.cookie = "bytbuild_session=; path=/; max-age=0";
-    document.cookie = "buildflow_session=; path=/; max-age=0";
+    // Clear session cookies for middleware
+    document.cookie = "bytbuild_session=; path=/; max-age=0; SameSite=Lax";
+    document.cookie = "buildflow_session=; path=/; max-age=0; SameSite=Lax";
     localStorage.removeItem("bytbuild_user");
     localStorage.removeItem("buildflow_user");
     router.push("/login");
