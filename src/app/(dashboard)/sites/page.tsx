@@ -494,7 +494,7 @@ export default function SitesPage() {
 
   const handlePrintStatement = () => {
     const originalTitle = document.title;
-    document.title = "";
+    document.title = " ";
     window.print();
     setTimeout(() => {
       document.title = originalTitle;
