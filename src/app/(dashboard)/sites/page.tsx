@@ -158,11 +158,11 @@ export default function SitesPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  // Pagination states for statements
-  const [purchasesPage, setPurchasesPage] = useState(1);
-  const [purchasesPageSize, setPurchasesPageSize] = useState(5);
-  const [workLogsPage, setWorkLogsPage] = useState(1);
-  const [workLogsPageSize, setWorkLogsPageSize] = useState(5);
+  // Pagination & filter states for unified site statement
+  const [statementPage, setStatementPage] = useState(1);
+  const [statementPageSize, setStatementPageSize] = useState(10);
+  const [statementTypeFilter, setStatementTypeFilter] = useState<string>("ALL");
+  const [statementSearch, setStatementSearch] = useState("");
 
   const [generatedDate, setGeneratedDate] = useState("");
   useEffect(() => {
@@ -300,15 +300,189 @@ export default function SitesPage() {
     ? siteIncomes.filter((i) => i.siteId === currentSite.id && isDateInRange(i.incomeDate))
     : [];
 
-  const paginatedPurchases = useMemo(() => {
-    const start = (purchasesPage - 1) * purchasesPageSize;
-    return allSitePurchases.slice(start, start + purchasesPageSize);
-  }, [allSitePurchases, purchasesPage, purchasesPageSize]);
+  // Unified Site Statement Entry Interface
+  interface SiteLedgerEntry {
+    id: string;
+    date: string;
+    type: "MATERIAL" | "LABOR" | "EXPENSE" | "INCOME" | "OPENING_BALANCE";
+    typeLabel: string;
+    title: string;
+    subtitle?: string;
+    voucherNo?: string;
+    amount: number;
+    isInflow: boolean;
+    rawCreatedAt?: string;
+  }
 
-  const paginatedWorkLogs = useMemo(() => {
-    const start = (workLogsPage - 1) * workLogsPageSize;
-    return allSiteWorkLogs.slice(start, start + workLogsPageSize);
-  }, [allSiteWorkLogs, workLogsPage, workLogsPageSize]);
+  // Combined all transactions sorted DATE-WISE (LATEST IN FIRST)
+  const allSiteLedgerEntries = useMemo(() => {
+    if (!currentSite) return [];
+
+    const entries: SiteLedgerEntry[] = [];
+
+    // 1. Material Purchases / Vendor Bills
+    allSitePurchases.forEach((p) => {
+      const ven = vendors.find((v) => v.id === p.vendorId);
+      entries.push({
+        id: `pur-${p.id}`,
+        date: p.purchaseDate,
+        type: "MATERIAL",
+        typeLabel: "Material Bill",
+        title: ven?.name || "Material Supplier",
+        subtitle: [ven?.tradeCategory, p.notes].filter(Boolean).join(" • "),
+        voucherNo: p.voucherNo,
+        amount: Number(p.amount),
+        isInflow: false,
+        rawCreatedAt: p.createdAt,
+      });
+    });
+
+    // 2. Labor Attendance & Wages
+    allSiteWorkLogs.forEach((w) => {
+      const worker = workers.find((wk) => wk.id === w.workerId);
+      entries.push({
+        id: `work-${w.id}`,
+        date: w.workDate,
+        type: "LABOR",
+        typeLabel: "Labor Wage",
+        title: worker?.name || "Laborer",
+        subtitle: [worker?.trade, w.notes].filter(Boolean).join(" • "),
+        voucherNo: undefined,
+        amount: Number(w.wageAmount),
+        isInflow: false,
+        rawCreatedAt: w.createdAt,
+      });
+    });
+
+    // 3. Site Expenses / Overhead
+    allSiteMiscExpenses.forEach((e) => {
+      const formatCategory = (cat: string) => {
+        switch (cat) {
+          case "ROOM_RENT":
+            return "Room / Labour Camp Rent";
+          case "PETROL_FUEL":
+          case "FUEL_TRAVEL":
+            return "Petrol & Vehicle Fuel";
+          case "FOOD_TEA_REFRESHMENTS":
+          case "TEA_REFRESHMENTS":
+            return "Worker Mess & Tea";
+          case "MACHINERY_RENT":
+          case "EQUIPMENT_RENT":
+            return "Machinery & Equipment Rent";
+          case "OFFICE_OVERHEAD":
+            return "Office & Admin Overhead";
+          case "SITE_PERMIT_FEES":
+            return "Site Permit & Legal Fees";
+          case "SALARY_ADVANCE":
+            return "Worker Salary Advance";
+          default:
+            return "Site Misc Overhead";
+        }
+      };
+
+      entries.push({
+        id: `exp-${e.id}`,
+        date: e.expenseDate,
+        type: "EXPENSE",
+        typeLabel: "Site Expense",
+        title: formatCategory(e.category),
+        subtitle: [e.notes, `Paid via ${e.paymentMode}`].filter(Boolean).join(" • "),
+        voucherNo: e.voucherNo,
+        amount: Number(e.amount),
+        isInflow: false,
+        rawCreatedAt: e.createdAt,
+      });
+    });
+
+    // 4. Client Incomes / Advance Inflows
+    allSiteIncomes.forEach((i) => {
+      entries.push({
+        id: `inc-${i.id}`,
+        date: i.incomeDate,
+        type: "INCOME",
+        typeLabel: "Client Inflow",
+        title: i.receivedFrom ? `From: ${i.receivedFrom}` : `Client Payment (${currentSite.clientName})`,
+        subtitle: [i.notes, `Via ${i.paymentMode}`].filter(Boolean).join(" • "),
+        voucherNo: i.referenceNo,
+        amount: Number(i.amount),
+        isInflow: true,
+        rawCreatedAt: i.createdAt,
+      });
+    });
+
+    // 5. Site Opening Balance (if specified and in date range)
+    if (
+      currentSite.openingBalance &&
+      currentSite.openingBalance > 0 &&
+      isDateInRange(currentSite.createdAt)
+    ) {
+      entries.push({
+        id: `op-${currentSite.id}`,
+        date: currentSite.createdAt,
+        type: "OPENING_BALANCE",
+        typeLabel: "Opening Advance",
+        title: "Client Opening Advance",
+        subtitle: `Starting fund balance logged on project creation`,
+        voucherNo: "OPENING",
+        amount: Number(currentSite.openingBalance),
+        isInflow: true,
+        rawCreatedAt: currentSite.createdAt,
+      });
+    }
+
+    // Sort DATE-WISE: LATEST IN FIRST (descending date)
+    entries.sort((a, b) => {
+      const cmp = b.date.localeCompare(a.date);
+      if (cmp !== 0) return cmp;
+      if (b.rawCreatedAt && a.rawCreatedAt) {
+        return b.rawCreatedAt.localeCompare(a.rawCreatedAt);
+      }
+      return 0;
+    });
+
+    return entries;
+  }, [
+    currentSite,
+    allSitePurchases,
+    allSiteWorkLogs,
+    allSiteMiscExpenses,
+    allSiteIncomes,
+    vendors,
+    workers,
+    startDate,
+    endDate,
+  ]);
+
+  // Filtered entries by category and search term
+  const filteredStatementEntries = useMemo(() => {
+    let list = allSiteLedgerEntries;
+    if (statementTypeFilter !== "ALL") {
+      list = list.filter((e) => e.type === statementTypeFilter);
+    }
+    if (statementSearch.trim()) {
+      const q = statementSearch.toLowerCase().trim();
+      list = list.filter(
+        (e) =>
+          e.title.toLowerCase().includes(q) ||
+          (e.subtitle && e.subtitle.toLowerCase().includes(q)) ||
+          (e.voucherNo && e.voucherNo.toLowerCase().includes(q)) ||
+          e.typeLabel.toLowerCase().includes(q) ||
+          e.date.includes(q)
+      );
+    }
+    return list;
+  }, [allSiteLedgerEntries, statementTypeFilter, statementSearch]);
+
+  // Paginated entries for the unified table
+  const paginatedStatementEntries = useMemo(() => {
+    const start = (statementPage - 1) * statementPageSize;
+    return filteredStatementEntries.slice(start, start + statementPageSize);
+  }, [filteredStatementEntries, statementPage, statementPageSize]);
+
+  // Reset pagination when site or filters change
+  useEffect(() => {
+    setStatementPage(1);
+  }, [selectedSiteId, statementTypeFilter, statementSearch, startDate, endDate]);
 
   const triggerSiteAction = (
     siteId: string,
@@ -887,125 +1061,238 @@ export default function SitesPage() {
             </div>
           </div>
 
-          <CardContent className="p-4 sm:p-6 space-y-6">
-            {/* Material Purchases Table */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 font-mono">
-                  1. Material Purchases &amp; Vendor Bills ({allSitePurchases.length})
-                </h3>
-                <span className="text-xs font-mono font-bold text-slate-900">
-                  Subtotal: {formatCurrency(allSitePurchases.reduce((s, p) => s + Number(p.amount), 0))}
-                </span>
+          <CardContent className="p-4 sm:p-6 space-y-5">
+            {/* ── Unified Statement Header & Actions ── */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 font-mono">
+                    Site Financial Ledger &amp; Comprehensive Statement
+                  </h3>
+                  <Badge variant="outline" className="text-xs font-mono font-bold text-slate-700 bg-slate-100">
+                    {filteredStatementEntries.length} records
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Chronological unified log of all site material bills, worker wages, operational expenses, and client inflows (sorted latest first).
+                </p>
               </div>
-              <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-[10px] uppercase font-mono text-slate-500 border-b border-slate-200">
-                    <tr>
-                      <th className="py-2.5 px-3">Date</th>
-                      <th className="py-2.5 px-3">Voucher #</th>
-                      <th className="py-2.5 px-3">Vendor</th>
-                      <th className="py-2.5 px-3">Notes</th>
-                      <th className="py-2.5 px-3 text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {paginatedPurchases.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="py-4 text-center text-slate-400 italic">
-                          No material bills recorded for this site.
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedPurchases.map((p) => {
-                        const ven = vendors.find((v) => v.id === p.vendorId);
-                        return (
-                          <tr key={p.id}>
-                            <td className="py-2 px-3 font-mono text-slate-500">{formatDate(p.purchaseDate)}</td>
-                            <td className="py-2 px-3 font-mono font-bold text-amber-800">
-                              {p.voucherNo ? `#${p.voucherNo}` : "—"}
-                            </td>
-                            <td className="py-2 px-3 font-semibold text-slate-800">{ven?.name || "Vendor"}</td>
-                            <td className="py-2 px-3 text-slate-500">{p.notes || "—"}</td>
-                            <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">
-                              {formatCurrency(p.amount)}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+
+              {/* Direct Site Actions */}
+              <div className="flex flex-wrap items-center gap-2 print:hidden">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => triggerSiteAction(currentSite.id, "PURCHASE")}
+                  className="h-8 text-xs text-amber-800 border-amber-200 bg-amber-50/70 hover:bg-amber-100 font-bold"
+                >
+                  <Truck className="h-3 w-3 mr-1 text-amber-600" />
+                  + Material
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => triggerSiteAction(currentSite.id, "WORK_LOG")}
+                  className="h-8 text-xs text-blue-800 border-blue-200 bg-blue-50/70 hover:bg-blue-100 font-bold"
+                >
+                  <Users className="h-3 w-3 mr-1 text-blue-600" />
+                  + Worker Wage
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => triggerSiteAction(currentSite.id, "EXPENSE")}
+                  className="h-8 text-xs text-purple-800 border-purple-200 bg-purple-50/70 hover:bg-purple-100 font-bold"
+                >
+                  <Receipt className="h-3 w-3 mr-1 text-purple-600" />
+                  + Expense
+                </Button>
+                {role === "OWNER" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => triggerSiteAction(currentSite.id, "INCOME")}
+                    className="h-8 text-xs text-emerald-800 border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 font-bold"
+                  >
+                    <IndianRupee className="h-3 w-3 mr-1 text-emerald-600" />
+                    + Client Inflow
+                  </Button>
+                )}
               </div>
-              <div className="print:hidden">
-                <Pagination
-                  currentPage={purchasesPage}
-                  totalItems={allSitePurchases.length}
-                  pageSize={purchasesPageSize}
-                  onPageChange={setPurchasesPage}
-                  onPageSizeChange={setPurchasesPageSize}
+            </div>
+
+            {/* ── Filter Pills & Search ── */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:hidden">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatementTypeFilter("ALL");
+                    setStatementPage(1);
+                  }}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                    statementTypeFilter === "ALL"
+                      ? "bg-slate-900 text-white shadow-xs font-bold"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  All ({allSiteLedgerEntries.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatementTypeFilter("MATERIAL");
+                    setStatementPage(1);
+                  }}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                    statementTypeFilter === "MATERIAL"
+                      ? "bg-amber-600 text-white shadow-xs font-bold"
+                      : "bg-amber-50 text-amber-800 border border-amber-200/60 hover:bg-amber-100"
+                  }`}
+                >
+                  📦 Materials ({allSitePurchases.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatementTypeFilter("LABOR");
+                    setStatementPage(1);
+                  }}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                    statementTypeFilter === "LABOR"
+                      ? "bg-blue-600 text-white shadow-xs font-bold"
+                      : "bg-blue-50 text-blue-800 border border-blue-200/60 hover:bg-blue-100"
+                  }`}
+                >
+                  👷 Wages ({allSiteWorkLogs.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatementTypeFilter("EXPENSE");
+                    setStatementPage(1);
+                  }}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                    statementTypeFilter === "EXPENSE"
+                      ? "bg-purple-600 text-white shadow-xs font-bold"
+                      : "bg-purple-50 text-purple-800 border border-purple-200/60 hover:bg-purple-100"
+                  }`}
+                >
+                  ⛽ Expenses ({allSiteMiscExpenses.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatementTypeFilter("INCOME");
+                    setStatementPage(1);
+                  }}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                    statementTypeFilter === "INCOME"
+                      ? "bg-emerald-600 text-white shadow-xs font-bold"
+                      : "bg-emerald-50 text-emerald-800 border border-emerald-200/60 hover:bg-emerald-100"
+                  }`}
+                >
+                  💰 Inflows ({allSiteIncomes.length})
+                </button>
+              </div>
+
+              {/* In-table Search */}
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search in site statement..."
+                  value={statementSearch}
+                  onChange={(e) => {
+                    setStatementSearch(e.target.value);
+                    setStatementPage(1);
+                  }}
+                  className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-amber-500"
                 />
               </div>
             </div>
 
-            {/* Worker Work Logs Table */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 font-mono">
-                  2. Labor Attendance &amp; Wages ({allSiteWorkLogs.length})
-                </h3>
-                <span className="text-xs font-mono font-bold text-slate-900">
-                  Subtotal: {formatCurrency(allSiteWorkLogs.reduce((s, w) => s + Number(w.wageAmount), 0))}
-                </span>
-              </div>
-              <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-[10px] uppercase font-mono text-slate-500 border-b border-slate-200">
+            {/* ── Unified Statement Table ── */}
+            <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-[10px] uppercase font-mono text-slate-500 border-b border-slate-200">
+                  <tr>
+                    <th className="py-2.5 px-3">Date</th>
+                    <th className="py-2.5 px-3">Type</th>
+                    <th className="py-2.5 px-3">Party / Description</th>
+                    <th className="py-2.5 px-3">Voucher / Ref #</th>
+                    <th className="py-2.5 px-3 text-right">Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {paginatedStatementEntries.length === 0 ? (
                     <tr>
-                      <th className="py-2.5 px-3">Date</th>
-                      <th className="py-2.5 px-3">Worker Name</th>
-                      <th className="py-2.5 px-3">Trade Skill</th>
-                      <th className="py-2.5 px-3">Work Description</th>
-                      <th className="py-2.5 px-3 text-right">Wage Amount</th>
+                      <td colSpan={5} className="py-8 text-center text-slate-400 italic">
+                        No transactions, material bills, wage logs, or expenses recorded for this site project.
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {paginatedWorkLogs.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="py-4 text-center text-slate-400 italic">
-                          No worker attendance logged for this site.
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedWorkLogs.map((w) => {
-                        const wk = workers.find((item) => item.id === w.workerId);
-                        return (
-                          <tr key={w.id}>
-                            <td className="py-2 px-3 font-mono text-slate-500">{formatDate(w.workDate)}</td>
-                            <td className="py-2 px-3 font-semibold text-slate-800">{wk?.name || "Worker"}</td>
-                            <td className="py-2 px-3">
-                              <Badge variant="outline" className="text-[10px]">{wk?.trade || "Laborer"}</Badge>
-                            </td>
-                            <td className="py-2 px-3 text-slate-500">{w.notes || "—"}</td>
-                            <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">
-                              {formatCurrency(w.wageAmount)}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <div className="print:hidden">
-                <Pagination
-                  currentPage={workLogsPage}
-                  totalItems={allSiteWorkLogs.length}
-                  pageSize={workLogsPageSize}
-                  onPageChange={setWorkLogsPage}
-                  onPageSizeChange={setWorkLogsPageSize}
-                />
-              </div>
+                  ) : (
+                    paginatedStatementEntries.map((entry) => {
+                      const badgeClass =
+                        entry.type === "INCOME"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : entry.type === "OPENING_BALANCE"
+                          ? "bg-teal-50 text-teal-800 border-teal-200"
+                          : entry.type === "MATERIAL"
+                          ? "bg-amber-50 text-amber-800 border-amber-200"
+                          : entry.type === "LABOR"
+                          ? "bg-blue-50 text-blue-700 border-blue-200"
+                          : "bg-purple-50 text-purple-700 border-purple-200";
+
+                      return (
+                        <tr key={entry.id} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="py-2.5 px-3 font-mono text-slate-600 font-medium whitespace-nowrap">
+                            {formatDate(entry.date)}
+                          </td>
+                          <td className="py-2.5 px-3 whitespace-nowrap">
+                            <Badge variant="outline" className={`text-[10px] font-bold ${badgeClass}`}>
+                              {entry.typeLabel}
+                            </Badge>
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <div className="font-semibold text-slate-900">{entry.title}</div>
+                            {entry.subtitle && (
+                              <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
+                                {entry.subtitle}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-bold whitespace-nowrap text-amber-800">
+                            {entry.voucherNo ? `#${entry.voucherNo}` : "—"}
+                          </td>
+                          <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                            <span
+                              className={`font-mono font-bold text-xs sm:text-sm ${
+                                entry.isInflow ? "text-emerald-600" : "text-rose-600"
+                              }`}
+                            >
+                              {entry.isInflow
+                                ? `+${formatCurrency(entry.amount)}`
+                                : `-${formatCurrency(entry.amount)}`}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="print:hidden">
+              <Pagination
+                currentPage={statementPage}
+                totalItems={filteredStatementEntries.length}
+                pageSize={statementPageSize}
+                onPageChange={setStatementPage}
+                onPageSizeChange={setStatementPageSize}
+              />
             </div>
 
             {/* Print Sign-off Blocks */}
