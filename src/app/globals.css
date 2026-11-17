@@ -107,7 +107,7 @@ body {
     color: #0f172a !important;
     font-size: 10pt !important;
     margin: 0 !important;
-    padding: 12mm 12mm !important;
+    padding: 0 !important;
     width: 100% !important;
     min-height: auto !important;
   }
@@ -164,9 +164,8 @@ body {
     print-color-adjust: exact !important;
   }
 
-  /* Suppress default browser print header (date, title) & footer (URL, page numbers) */
   @page {
-    margin: 0 !important;
+    margin: 12mm 10mm 12mm 10mm;
     size: auto;
   }
 }
