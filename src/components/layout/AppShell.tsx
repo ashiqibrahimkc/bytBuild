@@ -62,7 +62,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 />
               </div>
               <span className="font-extrabold text-slate-900 text-sm tracking-tight">
-                byten<span className="text-amber-600">.</span>
+                bytBuild<span className="text-amber-600">.</span>
               </span>
             </div>
           </div>
@@ -76,7 +76,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {/* Footer */}
         <footer className="border-t border-slate-200 bg-white px-6 py-4 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 print:hidden">
           <span>
-            © 2026 <a href="https://www.byten.in" target="_blank" rel="noopener noreferrer" className="font-bold text-slate-800 hover:text-amber-700 transition-colors">byten</a>. Real Cash Flow &amp; Multi-Site Ledger.
+            © 2026 <span className="font-bold text-slate-800">bytBuild</span>. Real Cash Flow &amp; Multi-Site Ledger.
           </span>
           <div className="flex items-center gap-1.5 text-xs">
             <a

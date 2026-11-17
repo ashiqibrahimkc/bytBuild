@@ -187,7 +187,7 @@ export default function LoginPage() {
           </div>
           <div>
             <span className="font-extrabold text-2xl tracking-tight text-white">
-              byten<span className="text-amber-500">.</span>
+              bytBuild<span className="text-amber-500">.</span>
             </span>
             <span className="block text-[11px] font-mono uppercase tracking-widest text-slate-400">
               Enterprise Construction ERP
@@ -233,7 +233,7 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 border-t border-slate-800/80 pt-6">
-          <span>&copy; 2026 byten. All rights reserved.</span>
+          <span>&copy; 2026 bytBuild. All rights reserved.</span>
           <div className="flex items-center gap-3">
             <span>Audit Trail Enabled</span>
             <span>&bull;</span>
@@ -250,14 +250,14 @@ export default function LoginPage() {
             <div className="bg-white rounded-xl p-1 shadow-md border border-slate-200 h-9 w-9 overflow-hidden flex items-center justify-center">
               <Image
                 src="/image/logo.png"
-                alt="byten Logo"
+                alt="bytBuild Logo"
                 width={36}
                 height={36}
                 className="w-full h-full object-contain"
               />
             </div>
             <div>
-              <span className="text-slate-900 text-xl font-bold">byten</span>
+              <span className="text-slate-900 text-xl font-bold">bytBuild</span>
               <span className="text-[10px] block text-slate-400 uppercase tracking-wider font-mono">
                 Construction ERP
               </span>
@@ -359,7 +359,7 @@ export default function LoginPage() {
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
               256-bit Encrypted Session
             </span>
-            <span className="font-mono">byten ERP v2.4</span>
+            <span className="font-mono">bytBuild ERP v2.4</span>
           </div>
         </div>
       </div>

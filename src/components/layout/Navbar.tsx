@@ -44,7 +44,7 @@ export function Navbar() {
             </div>
             <div>
               <span className="text-lg font-bold tracking-tight text-slate-900 block leading-tight">
-                byten<span className="text-amber-600">.</span>
+                bytBuild<span className="text-amber-600">.</span>
               </span>
               <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase block">
                 Cash Flow & Sites

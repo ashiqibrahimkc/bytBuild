@@ -139,7 +139,7 @@ export default function Sidebar({
           {!isMini && (
             <div>
               <p className="font-extrabold text-slate-900 leading-tight tracking-tight text-base">
-                byten<span className="text-amber-600">.</span>
+                bytBuild<span className="text-amber-600">.</span>
               </p>
               <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider font-mono">
                 Construction ERP
