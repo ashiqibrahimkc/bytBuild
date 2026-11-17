@@ -361,6 +361,24 @@ export default function WorkersPage() {
     return filteredStatement.slice(start, start + statementPageSize);
   }, [filteredStatement, statementPage, statementPageSize]);
 
+  // Date-filtered totals for active statement period
+  const periodEarned = useMemo(() => {
+    return filteredStatement.reduce((sum, item) => sum + (item.creditEarned || 0), 0);
+  }, [filteredStatement]);
+
+  const periodPaid = useMemo(() => {
+    return filteredStatement.reduce((sum, item) => sum + (item.debitPaid || 0), 0);
+  }, [filteredStatement]);
+
+  const handlePrintStatement = () => {
+    const originalTitle = document.title;
+    document.title = "";
+    window.print();
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1000);
+  };
+
   return (
     <div className="space-y-6">
       {/* ── Top Worker Roster & Controls (Hidden when printing worker statement) ── */}
@@ -889,73 +907,54 @@ export default function WorkersPage() {
       {currentWorker && workerStats && (
         <Card className="border-slate-200 bg-white shadow-md overflow-hidden print:border-none print:shadow-none">
           {/* ── Official Printable Worker Statement Header (Print Only) ───── */}
-          <div className="hidden print:block p-6 border-b-2 border-slate-900 pb-4">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg border border-slate-300 p-1 flex items-center justify-center bg-white">
-                  <Image
-                    src="/image/logo.png"
-                    alt="Company Logo"
-                    width={40}
-                    height={40}
-                    className="object-contain"
-                  />
-                </div>
-                <div>
-                  <h1 className="text-xl font-black uppercase tracking-tight text-slate-950">
-                    {companyName}
-                  </h1>
-                  <p className="text-xs font-semibold text-slate-600">
-                    Worker Wage Statement &amp; Attendance History
-                  </p>
-                  <p className="text-[10px] text-slate-500 font-mono">
-                    bytBuild Construction ERP • Field Payroll Division
-                  </p>
-                </div>
+          <div className="hidden print:block p-4 border-b-2 border-slate-900 pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-black uppercase tracking-tight text-slate-950">
+                  {companyName || "MK BUILDERS"}
+                </h1>
               </div>
               <div className="text-right text-xs font-mono">
-                <div className="inline-block bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded font-bold uppercase">
-                  WORKER STATEMENT
-                </div>
-                <p className="text-slate-600 mt-1">Date: {generatedDate || "Official Record"}</p>
+                <p className="text-slate-700 font-semibold">Date: {generatedDate || "Official Record"}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-3 bg-slate-50 border border-slate-200 rounded p-2.5 mt-3 text-xs font-mono">
+            {/* Standard Worker Info */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50 border border-slate-200 rounded-lg p-3 mt-3 text-xs font-mono">
               <div>
-                <span className="text-slate-400 text-[10px] block">Worker Name:</span>
-                <span className="font-bold text-slate-900">{currentWorker.name}</span>
+                <span className="text-slate-500 text-[10px] uppercase font-bold block">Worker Name:</span>
+                <span className="font-bold text-slate-950 text-sm">{currentWorker.name}</span>
               </div>
               <div>
-                <span className="text-slate-400 text-[10px] block">Trade / Skill:</span>
-                <span className="font-semibold text-slate-800">{currentWorker.trade}</span>
+                <span className="text-slate-500 text-[10px] uppercase font-bold block">Trade / Skill:</span>
+                <span className="font-bold text-slate-950 text-sm">{currentWorker.trade}</span>
               </div>
               <div>
-                <span className="text-slate-400 text-[10px] block">Compensation:</span>
-                <span className="font-semibold text-slate-800">
+                <span className="text-slate-500 text-[10px] uppercase font-bold block">Daily Wage / Phone:</span>
+                <span className="font-semibold text-slate-800 text-sm">
                   {currentWorker.compensationType === "MONTHLY_SALARY"
                     ? `${formatCurrency(currentWorker.monthlySalary || currentWorker.defaultDailyWage)}/mo`
                     : `${formatCurrency(currentWorker.defaultDailyWage)}/day`}
+                  {currentWorker.phone ? ` • ${currentWorker.phone}` : ""}
                 </span>
-              </div>
-              <div>
-                <span className="text-slate-400 text-[10px] block">Phone:</span>
-                <span className="font-semibold text-slate-800">{currentWorker.phone}</span>
               </div>
             </div>
 
+            {/* Top Summary Cards (Date-Filtered) */}
             <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-slate-200 text-center font-mono">
               <div className="bg-white rounded p-2 border border-slate-200">
-                <span className="text-[10px] text-slate-400 uppercase block">Total Earned</span>
-                <span className="font-bold text-slate-900 text-sm">{formatCurrency(workerStats.totalEarned)}</span>
+                <span className="text-[10px] text-slate-500 uppercase font-bold block">Total Earned</span>
+                <span className="font-bold text-slate-900 text-sm">{formatCurrency(periodEarned)}</span>
               </div>
               <div className="bg-white rounded p-2 border border-slate-200">
-                <span className="text-[10px] text-slate-400 uppercase block">Total Disbursed</span>
-                <span className="font-bold text-emerald-600 text-sm">{formatCurrency(workerStats.totalPaid)}</span>
+                <span className="text-[10px] text-slate-500 uppercase font-bold block">Total Disbursed</span>
+                <span className="font-bold text-emerald-700 text-sm">+{formatCurrency(periodPaid)}</span>
               </div>
               <div className="bg-white rounded p-2 border border-slate-200">
-                <span className="text-[10px] text-slate-400 uppercase block">Pending Balance</span>
-                <span className="font-black text-orange-600 text-sm">{formatCurrency(workerStats.outstandingBalance)}</span>
+                <span className="text-[10px] text-slate-500 uppercase font-bold block">Pending Balance</span>
+                <span className={`font-bold text-sm ${workerStats.outstandingBalance > 0 ? "text-orange-700" : "text-emerald-700"}`}>
+                  {formatCurrency(workerStats.outstandingBalance)}
+                </span>
               </div>
             </div>
           </div>
@@ -997,7 +996,7 @@ export default function WorkersPage() {
                   <Trash2 className="h-3.5 w-3.5 mr-1.5" />
                   Delete Worker
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Button variant="outline" size="sm" onClick={handlePrintStatement}>
                   <Printer className="h-3.5 w-3.5 mr-1.5" />
                   Print Statement
                 </Button>
@@ -1159,10 +1158,20 @@ export default function WorkersPage() {
               </table>
             </div>
 
+            {/* Print Record Count Header Only */}
+            <div className="hidden print:flex items-center justify-between py-1 font-mono text-xs font-bold text-slate-800">
+              <span>Total Records: {filteredStatement.length}</span>
+              {datePreset !== "ALL" && (startDate || endDate) && (
+                <span className="text-[11px] text-slate-600 font-normal">
+                  Period: {startDate ? formatDate(startDate) : "Start"} to {endDate ? formatDate(endDate) : "Latest"}
+                </span>
+              )}
+            </div>
+
             {/* ── Print-Only Table (Full Filtered Ledger) ─────────────────── */}
-            <div className="hidden print:block p-4">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100 text-[10px] uppercase tracking-wider text-slate-800 font-mono border-b-2 border-slate-300">
+            <div className="hidden print:block">
+              <table className="w-full text-left text-xs border border-slate-300">
+                <thead className="bg-slate-100 text-[10px] uppercase tracking-wider text-slate-900 font-mono border-b-2 border-slate-400">
                   <tr>
                     <th className="py-2 px-3 font-bold">Date</th>
                     <th className="py-2 px-3 font-bold">Type</th>
@@ -1175,7 +1184,7 @@ export default function WorkersPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {filteredStatement.map((tx) => (
-                    <tr key={tx.id} className="text-slate-800">
+                    <tr key={tx.id} className="break-inside-avoid text-slate-900 border-b border-slate-200">
                       <td className="py-2 px-3 whitespace-nowrap font-mono text-xs">
                         {formatDate(tx.date)}
                       </td>
@@ -1192,47 +1201,31 @@ export default function WorkersPage() {
                       <td className="py-2 px-3 text-right whitespace-nowrap font-mono font-bold text-slate-900">
                         {tx.creditEarned > 0 ? formatCurrency(tx.creditEarned) : "—"}
                       </td>
-                      <td className="py-2 px-3 text-right whitespace-nowrap font-mono font-bold text-emerald-600">
-                        {tx.debitPaid > 0 ? formatCurrency(tx.debitPaid) : "—"}
+                      <td className="py-2 px-3 text-right whitespace-nowrap font-mono font-bold text-emerald-700">
+                        {tx.debitPaid > 0 ? `+${formatCurrency(tx.debitPaid)}` : "—"}
                       </td>
                       <td className="py-2 px-3 text-right whitespace-nowrap font-mono font-black text-slate-900">
                         {formatCurrency(tx.runningBalance)}
                       </td>
                     </tr>
                   ))}
-                  {/* Totals Row */}
-                  <tr className="bg-slate-100 font-bold font-mono border-t-2 border-slate-900">
-                    <td colSpan={4} className="py-2.5 px-3 text-right uppercase text-slate-900">
+                  {/* Totals Row: Last Page Only */}
+                  <tr className="bg-slate-50 font-bold font-mono border-t-2 border-slate-400 break-inside-avoid">
+                    <td colSpan={4} className="py-2.5 px-3 text-right uppercase text-slate-800">
                       Statement Totals:
                     </td>
                     <td className="py-2.5 px-3 text-right text-slate-900 font-bold">
-                      {formatCurrency(workerStats.totalEarned)}
+                      {formatCurrency(periodEarned)}
                     </td>
                     <td className="py-2.5 px-3 text-right text-emerald-700 font-bold">
-                      {formatCurrency(workerStats.totalPaid)}
+                      +{formatCurrency(periodPaid)}
                     </td>
-                    <td className="py-2.5 px-3 text-right text-orange-700 font-black">
+                    <td className={`py-2.5 px-3 text-right font-black ${workerStats.outstandingBalance > 0 ? "text-orange-700" : "text-emerald-700"}`}>
                       {formatCurrency(workerStats.outstandingBalance)}
                     </td>
                   </tr>
                 </tbody>
               </table>
-
-              {/* Signatures */}
-              <div className="pt-12 grid grid-cols-2 gap-8 text-center text-xs">
-                <div>
-                  <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto font-bold text-slate-800">
-                    Worker Acknowledgment
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{currentWorker.name}</p>
-                </div>
-                <div>
-                  <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto font-bold text-slate-800">
-                    Authorized Signatory
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-0.5">For {companyName}</p>
-                </div>
-              </div>
             </div>
 
             <div className="print:hidden">
@@ -1242,6 +1235,7 @@ export default function WorkersPage() {
                 pageSize={statementPageSize}
                 onPageChange={setStatementPage}
                 onPageSizeChange={setStatementPageSize}
+                pageSizeOptions={[5, 10, 25, 50, 100, 500]}
               />
             </div>
           </CardContent>

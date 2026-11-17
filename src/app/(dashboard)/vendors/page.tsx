@@ -308,6 +308,15 @@ export default function VendorsPage() {
     return filteredPayments.slice(start, start + paymentPageSize);
   }, [filteredPayments, paymentPage, paymentPageSize]);
 
+  const handlePrintStatement = () => {
+    const originalTitle = document.title;
+    document.title = "";
+    window.print();
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1000);
+  };
+
   // Site-wise breakdown for selected vendor
   const siteBreakdown = useMemo(() => {
     const list = sites
@@ -791,69 +800,49 @@ export default function VendorsPage() {
         <div className="space-y-6 pt-4 border-t border-slate-200 print:border-none print:pt-0">
           <Card className="border-slate-200 bg-white shadow-md overflow-hidden print:border-none print:shadow-none">
             {/* ── Official Printable Vendor Statement Header (Print Only) ───── */}
-            <div className="hidden print:block p-6 border-b-2 border-slate-900 pb-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-lg border border-slate-300 p-1 flex items-center justify-center bg-white">
-                    <Image
-                      src="/image/logo.png"
-                      alt="Company Logo"
-                      width={40}
-                      height={40}
-                      className="object-contain"
-                    />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-black uppercase tracking-tight text-slate-950">
-                      {companyName}
-                    </h1>
-                    <p className="text-xs font-semibold text-slate-600">
-                      Vendor Statement of Account &amp; Payables Ledger
-                    </p>
-                    <p className="text-[10px] text-slate-500 font-mono">
-                      bytBuild Construction ERP • Procurement Division
-                    </p>
-                  </div>
+            <div className="hidden print:block p-4 border-b-2 border-slate-900 pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-black uppercase tracking-tight text-slate-950">
+                    {companyName || "MK BUILDERS"}
+                  </h1>
                 </div>
                 <div className="text-right text-xs font-mono">
-                  <div className="inline-block bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded font-bold uppercase">
-                    VENDOR STATEMENT
+                  <p className="text-slate-700 font-semibold">Date: {generatedDate || "Official Record"}</p>
+                </div>
+              </div>
+
+              {/* Standard Vendor Info */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50 border border-slate-200 rounded-lg p-3 mt-3 text-xs font-mono">
+                <div>
+                  <span className="text-slate-500 text-[10px] uppercase font-bold block">Vendor Name:</span>
+                  <span className="font-bold text-slate-950 text-sm">{currentVendor.name}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-[10px] uppercase font-bold block">Supply Category:</span>
+                  <span className="font-bold text-slate-950 text-sm">{currentVendor.tradeCategory}</span>
+                </div>
+                {currentVendor.phone && (
+                  <div>
+                    <span className="text-slate-500 text-[10px] uppercase font-bold block">Contact Phone:</span>
+                    <span className="font-semibold text-slate-800 text-sm">{currentVendor.phone}</span>
                   </div>
-                  <p className="text-slate-600 mt-1">Date: {generatedDate || "Official Record"}</p>
-                </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-4 gap-3 bg-slate-50 border border-slate-200 rounded p-2.5 mt-3 text-xs font-mono">
-                <div>
-                  <span className="text-slate-400 text-[10px] block">Vendor Name:</span>
-                  <span className="font-bold text-slate-900">{currentVendor.name}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 text-[10px] block">Supply Category:</span>
-                  <span className="font-semibold text-slate-800">{currentVendor.tradeCategory}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 text-[10px] block">Contact Phone:</span>
-                  <span className="font-semibold text-slate-800">{currentVendor.phone}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 text-[10px] block">Payment Terms:</span>
-                  <span className="font-semibold text-slate-800">Net 30 Days (Account Payable)</span>
-                </div>
-              </div>
-
+              {/* Top Summary Cards */}
               <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-slate-200 text-center font-mono">
                 <div className="bg-white rounded p-2 border border-slate-200">
-                  <span className="text-[10px] text-slate-400 uppercase block">Total Billed</span>
+                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Total Billed</span>
                   <span className="font-bold text-slate-900 text-sm">{formatCurrency(vendorStats.totalPurchased)}</span>
                 </div>
                 <div className="bg-white rounded p-2 border border-slate-200">
-                  <span className="text-[10px] text-slate-400 uppercase block">Total Paid</span>
-                  <span className="font-bold text-emerald-600 text-sm">{formatCurrency(vendorStats.totalPaid)}</span>
+                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Total Paid</span>
+                  <span className="font-bold text-emerald-700 text-sm">{formatCurrency(vendorStats.totalPaid)}</span>
                 </div>
                 <div className="bg-white rounded p-2 border border-slate-200">
-                  <span className="text-[10px] text-slate-400 uppercase block">Balance Owed</span>
-                  <span className={`font-black text-sm ${vendorStats.outstandingBalance > 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Balance Owed</span>
+                  <span className={`font-bold text-sm ${vendorStats.outstandingBalance > 0 ? "text-rose-700" : "text-emerald-700"}`}>
                     {formatCurrency(vendorStats.outstandingBalance)}
                   </span>
                 </div>
@@ -900,7 +889,7 @@ export default function VendorsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.print()}
+                    onClick={handlePrintStatement}
                   >
                     <Printer className="h-3.5 w-3.5 mr-1.5" />
                     Print Statement
@@ -948,76 +937,147 @@ export default function VendorsPage() {
               </div>
             </CardHeader>
 
-            {/* Site Breakdown Cards */}
+            {/* Site Breakdown Cards (On-Screen Interactive View) */}
             <CardContent className="p-4 sm:p-6 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 font-mono">
-                    Site-Wise Material Supply Breakdown
-                  </h3>
-                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                    {siteBreakdown.length} {siteBreakdown.length === 1 ? "Site" : "Sites"}
-                  </span>
+              <div className="print:hidden space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 font-mono">
+                      Site-Wise Material Supply Breakdown
+                    </h3>
+                    <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                      {siteBreakdown.length} {siteBreakdown.length === 1 ? "Site" : "Sites"}
+                    </span>
+                  </div>
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                    <Input
+                      placeholder="Search site or client..."
+                      value={siteBreakdownSearch}
+                      onChange={(e) => setSiteBreakdownSearch(e.target.value)}
+                      className="pl-8 h-8 text-xs bg-white border-slate-200"
+                    />
+                  </div>
                 </div>
-                <div className="relative w-full sm:w-64 print:hidden">
-                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                  <Input
-                    placeholder="Search site or client..."
-                    value={siteBreakdownSearch}
-                    onChange={(e) => setSiteBreakdownSearch(e.target.value)}
-                    className="pl-8 h-8 text-xs bg-white border-slate-200"
-                  />
-                </div>
+
+                {siteBreakdown.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">
+                    {siteBreakdownSearch.trim()
+                      ? `No supply sites found matching "${siteBreakdownSearch}".`
+                      : "No site-allocated material purchases recorded yet."}
+                  </p>
+                ) : (
+                  <div className="max-h-[380px] overflow-y-auto pr-1.5 scrollbar-thin">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {siteBreakdown.map(({ site, purchases, total }) => (
+                        <div key={site.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-900 text-xs sm:text-sm">{site.name}</span>
+                            <span className="font-mono font-bold text-slate-900 text-xs">{formatCurrency(total)}</span>
+                          </div>
+                          <div className="text-[11px] text-slate-500">
+                            {purchases.length} bill(s) logged for client: <strong>{site.clientName}</strong>
+                          </div>
+                          <div className="space-y-1 pt-1 border-t border-slate-200 max-h-28 overflow-y-auto pr-1">
+                            {purchases.map((p) => (
+                              <div key={p.id} className="flex items-center justify-between text-[11px] font-mono">
+                                <span className="text-slate-500">
+                                  {formatDate(p.purchaseDate)} {p.voucherNo ? `(Voucher #${p.voucherNo})` : ""}
+                                </span>
+                                <span className="font-semibold text-slate-800">{formatCurrency(p.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {siteBreakdown.length === 0 ? (
-                <p className="text-xs text-slate-400 italic">
-                  {siteBreakdownSearch.trim()
-                    ? `No supply sites found matching "${siteBreakdownSearch}".`
-                    : "No site-allocated material purchases recorded yet."}
-                </p>
-              ) : (
-                <div className="max-h-[380px] overflow-y-auto pr-1.5 scrollbar-thin print:max-h-none print:overflow-visible">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {siteBreakdown.map(({ site, purchases, total }) => (
-                      <div key={site.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-slate-900 text-xs sm:text-sm">{site.name}</span>
-                          <span className="font-mono font-bold text-slate-900 text-xs">{formatCurrency(total)}</span>
-                        </div>
-                        <div className="text-[11px] text-slate-500">
-                          {purchases.length} bill(s) logged for client: <strong>{site.clientName}</strong>
-                        </div>
-                        <div className="space-y-1 pt-1 border-t border-slate-200 max-h-28 overflow-y-auto pr-1">
-                          {purchases.map((p) => (
-                            <div key={p.id} className="flex items-center justify-between text-[11px] font-mono">
-                              <span className="text-slate-500">
-                                {formatDate(p.purchaseDate)} {p.voucherNo ? `(Voucher #${p.voucherNo})` : ""}
-                              </span>
-                              <span className="font-semibold text-slate-800">{formatCurrency(p.amount)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Print Record Count Header Only */}
+              <div className="hidden print:flex items-center justify-between py-1 font-mono text-xs font-bold text-slate-800">
+                <span>Total Material Bills: {filteredPurchases.length}</span>
+                {datePreset !== "ALL" && (startDate || endDate) && (
+                  <span className="text-[11px] text-slate-600 font-normal">
+                    Period: {startDate ? formatDate(startDate) : "Start"} to {endDate ? formatDate(endDate) : "Latest"}
+                  </span>
+                )}
+              </div>
 
-              {/* Print Sign-off Blocks */}
-              <div className="hidden print:grid pt-12 grid-cols-2 gap-8 text-center text-xs">
-                <div>
-                  <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto font-bold text-slate-800">
-                    Vendor Acknowledgment
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{currentVendor.name}</p>
-                </div>
-                <div>
-                  <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto font-bold text-slate-800">
-                    Authorized Signatory
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-0.5">For {companyName}</p>
-                </div>
+              {/* ── Print-Only Table (Full Unpaginated Material Statement with ALL Data) ── */}
+              <div className="hidden print:block">
+                <table className="w-full text-left text-xs border border-slate-300">
+                  <thead className="bg-slate-100 text-[10px] uppercase font-mono text-slate-900 border-b-2 border-slate-400">
+                    <tr>
+                      <th className="py-2 px-3 font-bold">Date</th>
+                      <th className="py-2 px-3 font-bold">Site Project</th>
+                      <th className="py-2 px-3 font-bold">Client Name</th>
+                      <th className="py-2 px-3 font-bold">Voucher / Ref #</th>
+                      <th className="py-2 px-3 text-right font-bold">Bill Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {filteredPurchases.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-6 text-center text-slate-400 italic">
+                          No material purchases recorded for this vendor.
+                        </td>
+                      </tr>
+                    ) : (
+                      <>
+                        {filteredPurchases.map((p) => {
+                          const site = sites.find((s) => s.id === p.siteId);
+                          return (
+                            <tr key={`print-${p.id}`} className="break-inside-avoid text-slate-900 border-b border-slate-200">
+                              <td className="py-2 px-3 font-mono whitespace-nowrap text-xs">
+                                {formatDate(p.purchaseDate)}
+                              </td>
+                              <td className="py-2 px-3 font-bold text-slate-900">
+                                {site?.name || "General / Head Office"}
+                              </td>
+                              <td className="py-2 px-3 text-slate-700">
+                                {site?.clientName || "—"}
+                              </td>
+                              <td className="py-2 px-3 font-mono font-semibold whitespace-nowrap text-slate-800">
+                                {p.voucherNo ? `#${p.voucherNo}` : "—"}
+                              </td>
+                              <td className="py-2 px-3 text-right whitespace-nowrap font-mono font-bold text-xs text-slate-900">
+                                {formatCurrency(p.amount)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+
+                        {/* Summary Totals: Last Page Only */}
+                        <tr className="bg-slate-50 border-t-2 border-slate-400 font-mono text-xs break-inside-avoid">
+                          <td colSpan={4} className="py-2 px-3 text-right font-semibold text-slate-700">
+                            Total Material Billed:
+                          </td>
+                          <td className="py-2 px-3 text-right font-bold text-slate-900">
+                            {formatCurrency(vendorStats.totalPurchased)}
+                          </td>
+                        </tr>
+                        <tr className="bg-slate-50 border-t border-slate-200 font-mono text-xs break-inside-avoid">
+                          <td colSpan={4} className="py-2 px-3 text-right font-semibold text-slate-700">
+                            Total Payments Disbursed:
+                          </td>
+                          <td className="py-2 px-3 text-right font-bold text-emerald-700">
+                            {formatCurrency(vendorStats.totalPaid)}
+                          </td>
+                        </tr>
+                        <tr className="bg-slate-100 font-bold border-t border-slate-300 font-mono text-xs break-inside-avoid">
+                          <td colSpan={4} className="py-2 px-3 text-right font-bold text-slate-900">
+                            Remaining Balance Owed:
+                          </td>
+                          <td className={`py-2 px-3 text-right font-black ${vendorStats.outstandingBalance > 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                            {formatCurrency(vendorStats.outstandingBalance)}
+                          </td>
+                        </tr>
+                      </>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
