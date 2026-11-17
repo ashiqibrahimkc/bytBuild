@@ -479,6 +479,28 @@ export default function SitesPage() {
     return filteredStatementEntries.slice(start, start + statementPageSize);
   }, [filteredStatementEntries, statementPage, statementPageSize]);
 
+  // Date-filtered totals for active statement period
+  const periodInflows = useMemo(() => {
+    return filteredStatementEntries
+      .filter((e) => e.isInflow)
+      .reduce((sum, e) => sum + e.amount, 0);
+  }, [filteredStatementEntries]);
+
+  const periodExpenses = useMemo(() => {
+    return filteredStatementEntries
+      .filter((e) => !e.isInflow)
+      .reduce((sum, e) => sum + e.amount, 0);
+  }, [filteredStatementEntries]);
+
+  const handlePrintStatement = () => {
+    const originalTitle = document.title;
+    document.title = "";
+    window.print();
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1000);
+  };
+
   // Reset pagination when site or filters change
   useEffect(() => {
     setStatementPage(1);
@@ -884,75 +906,49 @@ export default function SitesPage() {
       {currentSite && currentStats && (
         <Card className="border-slate-200 bg-white shadow-md overflow-hidden mt-6 print:border-none print:shadow-none print:mt-0">
           {/* ── Official Printable Site Statement Header (Print Only) ───── */}
-          <div className="hidden print:block p-6 border-b-2 border-slate-900 pb-4">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg border border-slate-300 p-1 flex items-center justify-center bg-white">
-                  <Image
-                    src="/image/logo.png"
-                    alt="Company Logo"
-                    width={40}
-                    height={40}
-                    className="object-contain"
-                  />
-                </div>
-                <div>
-                  <h1 className="text-xl font-black uppercase tracking-tight text-slate-950">
-                    {companyName}
-                  </h1>
-                  <p className="text-xs font-semibold text-slate-600">
-                    Project Financial Cost Statement &amp; Billing Ledger
-                  </p>
-                  <p className="text-[10px] text-slate-500 font-mono">
-                    BytBuild Construction ERP • Multi-Site Project Accounting
-                  </p>
-                </div>
+          <div className="hidden print:block p-4 border-b-2 border-slate-900 pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-black uppercase tracking-tight text-slate-950">
+                  {companyName || "MK BUILDERS"}
+                </h1>
               </div>
               <div className="text-right text-xs font-mono">
-                <div className="inline-block bg-slate-100 border border-slate-300 px-2.5 py-0.5 rounded font-bold uppercase">
-                  SITE STATEMENT
+                <p className="text-slate-700 font-semibold">Date: {generatedDate || "Official Record"}</p>
+              </div>
+            </div>
+
+            {/* Standard Project & Client Info (No Status) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50 border border-slate-200 rounded-lg p-3 mt-3 text-xs font-mono">
+              <div>
+                <span className="text-slate-500 text-[10px] uppercase font-bold block">Project Name:</span>
+                <span className="font-bold text-slate-950 text-sm">{currentSite.name}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 text-[10px] uppercase font-bold block">Client Name:</span>
+                <span className="font-bold text-slate-950 text-sm">{currentSite.clientName}</span>
+              </div>
+              {currentSite.location && (
+                <div>
+                  <span className="text-slate-500 text-[10px] uppercase font-bold block">Location:</span>
+                  <span className="font-semibold text-slate-800 text-sm">{currentSite.location}</span>
                 </div>
-                <p className="text-slate-600 mt-1">Date: {generatedDate || "Official Record"}</p>
-              </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-4 gap-3 bg-slate-50 border border-slate-200 rounded p-2.5 mt-3 text-xs font-mono">
-              <div>
-                <span className="text-slate-400 text-[10px] block">Project Name:</span>
-                <span className="font-bold text-slate-900">{currentSite.name}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 text-[10px] block">Client Name:</span>
-                <span className="font-semibold text-slate-800">{currentSite.clientName}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 text-[10px] block">Location:</span>
-                <span className="font-semibold text-slate-800">{currentSite.location}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 text-[10px] block">Status:</span>
-                <span className="font-semibold text-slate-800 uppercase">{currentSite.status}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 gap-3 mt-3 pt-3 border-t border-slate-200 text-center font-mono">
+            {/* Date-Filtered Period Summary (No Net Margin) */}
+            <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-slate-200 text-center font-mono">
               <div className="bg-white rounded p-2 border border-slate-200">
-                <span className="text-[10px] text-slate-400 uppercase block">Estimated Budget</span>
+                <span className="text-[10px] text-slate-500 uppercase font-bold block">Estimated Budget</span>
                 <span className="font-bold text-slate-900 text-sm">{formatCurrency(currentSite.estimatedBudget)}</span>
               </div>
               <div className="bg-white rounded p-2 border border-slate-200">
-                <span className="text-[10px] text-slate-400 uppercase block">Client Inflows</span>
-                <span className="font-bold text-emerald-600 text-sm">{formatCurrency(currentStats.totalIncome)}</span>
+                <span className="text-[10px] text-slate-500 uppercase font-bold block">Client Inflows</span>
+                <span className="font-bold text-emerald-700 text-sm">+{formatCurrency(periodInflows)}</span>
               </div>
               <div className="bg-white rounded p-2 border border-slate-200">
-                <span className="text-[10px] text-slate-400 uppercase block">Total Expenses</span>
-                <span className="font-bold text-rose-600 text-sm">{formatCurrency(currentStats.totalExpense)}</span>
-              </div>
-              <div className="bg-white rounded p-2 border border-slate-200">
-                <span className="text-[10px] text-slate-400 uppercase block">Net Margin</span>
-                <span className={`font-black text-sm ${currentStats.netMargin >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                  {formatCurrency(currentStats.netMargin)}
-                </span>
+                <span className="text-[10px] text-slate-500 uppercase font-bold block">Total Expenses</span>
+                <span className="font-bold text-rose-700 text-sm">-{formatCurrency(periodExpenses)}</span>
               </div>
             </div>
           </div>
@@ -986,7 +982,7 @@ export default function SitesPage() {
                   <Trash2 className="h-3.5 w-3.5 mr-1.5" />
                   Delete Site
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Button variant="outline" size="sm" onClick={handlePrintStatement}>
                   <Printer className="h-3.5 w-3.5 mr-1.5" />
                   Print Statement
                 </Button>
@@ -1063,7 +1059,7 @@ export default function SitesPage() {
 
           <CardContent className="p-4 sm:p-6 space-y-5">
             {/* ── Unified Statement Header & Actions ── */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-200 print:hidden">
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 font-mono">
@@ -1284,6 +1280,16 @@ export default function SitesPage() {
               </table>
             </div>
 
+            {/* Print Record Count Header Only */}
+            <div className="hidden print:flex items-center justify-between py-1 font-mono text-xs font-bold text-slate-800">
+              <span>Total Records: {filteredStatementEntries.length}</span>
+              {datePreset !== "ALL" && (startDate || endDate) && (
+                <span className="text-[11px] text-slate-600 font-normal">
+                  Period: {startDate ? formatDate(startDate) : "Start"} to {endDate ? formatDate(endDate) : "Latest"}
+                </span>
+              )}
+            </div>
+
             {/* ── Print-Only Table (Full Unpaginated Statement with ALL Data) ── */}
             <div className="hidden print:block">
               <table className="w-full text-left text-xs border border-slate-300">
@@ -1304,64 +1310,54 @@ export default function SitesPage() {
                       </td>
                     </tr>
                   ) : (
-                    filteredStatementEntries.map((entry) => (
-                      <tr key={`print-${entry.id}`} className="break-inside-avoid text-slate-900 border-b border-slate-200">
-                        <td className="py-2 px-3 font-mono whitespace-nowrap text-xs">
-                          {formatDate(entry.date)}
+                    <>
+                      {filteredStatementEntries.map((entry) => (
+                        <tr key={`print-${entry.id}`} className="break-inside-avoid text-slate-900 border-b border-slate-200">
+                          <td className="py-2 px-3 font-mono whitespace-nowrap text-xs">
+                            {formatDate(entry.date)}
+                          </td>
+                          <td className="py-2 px-3 whitespace-nowrap font-mono font-bold text-[10px]">
+                            {entry.typeLabel}
+                          </td>
+                          <td className="py-2 px-3">
+                            <div className="font-bold text-slate-900">{entry.title}</div>
+                            {entry.subtitle && (
+                              <div className="text-[10px] text-slate-600">{entry.subtitle}</div>
+                            )}
+                          </td>
+                          <td className="py-2 px-3 font-mono font-semibold whitespace-nowrap text-slate-800">
+                            {entry.voucherNo ? `#${entry.voucherNo}` : "—"}
+                          </td>
+                          <td className="py-2 px-3 text-right whitespace-nowrap font-mono font-bold text-xs">
+                            <span className={entry.isInflow ? "text-emerald-700" : "text-rose-700"}>
+                              {entry.isInflow
+                                ? `+${formatCurrency(entry.amount)}`
+                                : `-${formatCurrency(entry.amount)}`}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+
+                      {/* End-of-Statement Date-Filtered Summary (Only at the end of the last page, NOT on every page) */}
+                      <tr className="bg-slate-50 border-t-2 border-slate-400 font-mono text-xs break-inside-avoid">
+                        <td colSpan={4} className="py-2 px-3 text-right font-semibold text-slate-700">
+                          Total Client Inflows:
                         </td>
-                        <td className="py-2 px-3 whitespace-nowrap font-mono font-bold text-[10px]">
-                          {entry.typeLabel}
-                        </td>
-                        <td className="py-2 px-3">
-                          <div className="font-bold text-slate-900">{entry.title}</div>
-                          {entry.subtitle && (
-                            <div className="text-[10px] text-slate-600">{entry.subtitle}</div>
-                          )}
-                        </td>
-                        <td className="py-2 px-3 font-mono font-semibold whitespace-nowrap text-slate-800">
-                          {entry.voucherNo ? `#${entry.voucherNo}` : "—"}
-                        </td>
-                        <td className="py-2 px-3 text-right whitespace-nowrap font-mono font-bold text-xs">
-                          <span className={entry.isInflow ? "text-emerald-700" : "text-rose-700"}>
-                            {entry.isInflow
-                              ? `+${formatCurrency(entry.amount)}`
-                              : `-${formatCurrency(entry.amount)}`}
-                          </span>
+                        <td className="py-2 px-3 text-right font-bold text-emerald-700">
+                          +{formatCurrency(periodInflows)}
                         </td>
                       </tr>
-                    ))
+                      <tr className="bg-slate-50 border-t border-slate-200 font-mono text-xs break-inside-avoid">
+                        <td colSpan={4} className="py-2 px-3 text-right font-semibold text-slate-700">
+                          Total Site Expenses:
+                        </td>
+                        <td className="py-2 px-3 text-right font-bold text-rose-700">
+                          -{formatCurrency(periodExpenses)}
+                        </td>
+                      </tr>
+                    </>
                   )}
                 </tbody>
-                <tfoot className="bg-slate-50 border-t-2 border-slate-400 font-mono text-xs">
-                  <tr className="border-b border-slate-200">
-                    <td colSpan={4} className="py-1.5 px-3 text-right font-semibold text-slate-700">
-                      Total Client Inflows:
-                    </td>
-                    <td className="py-1.5 px-3 text-right font-bold text-emerald-700">
-                      +{formatCurrency(currentStats.totalIncome)}
-                    </td>
-                  </tr>
-                  <tr className="border-b border-slate-200">
-                    <td colSpan={4} className="py-1.5 px-3 text-right font-semibold text-slate-700">
-                      Total Site Expenses (Materials, Wages &amp; Overhead):
-                    </td>
-                    <td className="py-1.5 px-3 text-right font-bold text-rose-700">
-                      -{formatCurrency(currentStats.totalExpense)}
-                    </td>
-                  </tr>
-                  <tr className="font-bold">
-                    <td colSpan={4} className="py-2 px-3 text-right font-bold text-slate-900">
-                      Net Project Balance / Margin:
-                    </td>
-                    <td
-                      className={`py-2 px-3 text-right font-black ${
-                        currentStats.netMargin >= 0 ? "text-emerald-700" : "text-rose-700"
-                      }`}
-                    >
-                      {formatCurrency(currentStats.netMargin)}
-                    </td>
-                  </tr>
-                </tfoot>
               </table>
             </div>
 
@@ -1375,22 +1371,6 @@ export default function SitesPage() {
                 onPageSizeChange={setStatementPageSize}
                 pageSizeOptions={[5, 10, 25, 50, 100, 500]}
               />
-            </div>
-
-            {/* Print Sign-off Blocks */}
-            <div className="hidden print:grid pt-12 grid-cols-2 gap-8 text-center text-xs break-inside-avoid">
-              <div>
-                <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto font-bold text-slate-800">
-                  Site Engineer / Project Manager
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">Field Supervision</p>
-              </div>
-              <div>
-                <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto font-bold text-slate-800">
-                  Authorized Signatory
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">For {companyName}</p>
-              </div>
             </div>
           </CardContent>
         </Card>
