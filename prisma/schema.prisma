@@ -33,6 +33,7 @@ enum WorkerCompensationType {
 }
 
 enum ExpenseCategory {
+  OUTSIDE_LABOR
   SALARY_ADVANCE
   ROOM_RENT
   PETROL_FUEL
