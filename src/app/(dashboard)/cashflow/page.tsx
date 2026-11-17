@@ -380,7 +380,7 @@ export default function CashFlowPage() {
                   Treasury Cash Book &amp; Actual Cash In Hand Register
                 </p>
                 <p className="text-[10px] text-slate-500 font-mono">
-                  BytBuild Construction ERP • Treasury &amp; Cash Reconciliation Division
+                  bytBuild Construction ERP • Treasury &amp; Cash Reconciliation Division
                 </p>
               </div>
             </div>

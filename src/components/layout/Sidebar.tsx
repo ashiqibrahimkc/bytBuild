@@ -61,7 +61,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { role, setRole, currentUser, canAccessPage } = useConstruction();
+  const { role, setRole, currentUser, canAccessPage, companyName } = useConstruction();
   const [userDisplay, setUserDisplay] = useState<{ name: string; username: string }>({
     name: "User",
     username: "",
@@ -141,8 +141,8 @@ export default function Sidebar({
               <p className="font-extrabold text-slate-900 leading-tight tracking-tight text-base">
                 bytBuild<span className="text-amber-600">.</span>
               </p>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider font-mono">
-                Construction ERP
+              <p className="text-[10px] uppercase font-bold text-amber-700 tracking-wider font-mono truncate max-w-[130px]" title={companyName || "MK Builders"}>
+                {companyName || "MK Builders"}
               </p>
             </div>
           )}

@@ -29,8 +29,8 @@ export default function LoginPage() {
 
   const isSupabaseConfigured = Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("[YOUR-PROJECT-REF]") &&
-      !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project")
+    !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("[YOUR-PROJECT-REF]") &&
+    !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project")
   );
 
   async function completeLogin(
@@ -112,7 +112,7 @@ export default function LoginPage() {
               role: r?.name || "OWNER",
             };
           });
-        } catch {}
+        } catch { }
       }
     }
 
@@ -190,7 +190,7 @@ export default function LoginPage() {
               bytBuild<span className="text-amber-500">.</span>
             </span>
             <span className="block text-[11px] font-mono uppercase tracking-widest text-slate-400">
-              Enterprise Construction ERP
+              by byten • Construction ERP
             </span>
           </div>
         </div>
@@ -233,7 +233,7 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 border-t border-slate-800/80 pt-6">
-          <span>&copy; 2026 bytBuild. All rights reserved.</span>
+          <span>&copy; 2026 byten. All rights reserved. • bytBuild ERP</span>
           <div className="flex items-center gap-3">
             <span>Audit Trail Enabled</span>
             <span>&bull;</span>
@@ -259,17 +259,20 @@ export default function LoginPage() {
             <div>
               <span className="text-slate-900 text-xl font-bold">bytBuild</span>
               <span className="text-[10px] block text-slate-400 uppercase tracking-wider font-mono">
-                Construction ERP
+                MK Builders Workspace
               </span>
             </div>
           </div>
 
           <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-800 font-mono">
+              <span>Customer: MK Builders</span>
+            </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Sign In to Your Workspace
             </h2>
             <p className="text-slate-500 text-sm">
-              Enter your registered username or email to access your workspace.
+              Enter your registered username or email to access the MK Builders workspace.
             </p>
           </div>
 
@@ -359,7 +362,7 @@ export default function LoginPage() {
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
               256-bit Encrypted Session
             </span>
-            <span className="font-mono">bytBuild ERP v2.4</span>
+            <span className="font-mono">bytBuild by byten v2.4</span>
           </div>
         </div>
       </div>

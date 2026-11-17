@@ -204,13 +204,13 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   const [role, setRoleState] = useState<UserRole>("OWNER");
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
 
-  // Company Name - Dynamic & Configurable by Owner
+  // Company Name - Dynamic & Configurable by Owner (Customer: MK Builders)
   const [companyName, setCompanyNameState] = useState<string>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("bytbuild_company_name");
-      if (saved) return saved;
+      if (saved && saved !== "byten") return saved;
     }
-    return "byten";
+    return "MK Builders";
   });
 
   const setCompanyName = useCallback((name: string) => {
@@ -220,16 +220,17 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
-  // One-time fresh start storage cleanup
+  // One-time fresh start storage cleanup & customer migration to "MK Builders"
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v8");
+      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v9");
       if (!isFresh) {
-        localStorage.clear();
-        localStorage.setItem("bytbuild_fresh_clean_v8", "true");
-        localStorage.setItem("bytbuild_company_name", "byten");
-        localStorage.setItem("c_roles", JSON.stringify(INITIAL_ROLES));
-        localStorage.setItem("c_users", JSON.stringify([]));
+        localStorage.setItem("bytbuild_fresh_clean_v9", "true");
+        const saved = localStorage.getItem("bytbuild_company_name");
+        if (!saved || saved === "byten") {
+          localStorage.setItem("bytbuild_company_name", "MK Builders");
+          setCompanyNameState("MK Builders");
+        }
       }
     }
   }, []);

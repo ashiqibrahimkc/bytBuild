@@ -909,7 +909,7 @@ export default function WorkersPage() {
                     Worker Wage Statement &amp; Attendance History
                   </p>
                   <p className="text-[10px] text-slate-500 font-mono">
-                    BytBuild Construction ERP • Field Payroll Division
+                    bytBuild Construction ERP • Field Payroll Division
                   </p>
                 </div>
               </div>

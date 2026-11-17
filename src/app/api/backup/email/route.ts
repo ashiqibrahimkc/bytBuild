@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
           <p style="color: #94a3b8; margin: 4px 0 0 0; font-size: 12px; font-mono;">Automated Database & Cash Flow Backup</p>
         </div>
 
-        <h2 style="color: #0f172a; font-size: 16px; margin-bottom: 8px;">Backup Snapshot for: <span style="color: #d97706;">${companyName || "BytBuild Constructions"}</span></h2>
+        <h2 style="color: #0f172a; font-size: 16px; margin-bottom: 8px;">Backup Snapshot for: <span style="color: #d97706;">${companyName || "MK Builders"}</span></h2>
         <p style="color: #64748b; font-size: 13px; line-height: 1.5;">
           A full certified database snapshot was generated on <strong>${dateStr}</strong>. The backup file is attached to this email. Keep this file safe for disaster recovery or offline archiving.
         </p>
@@ -100,16 +100,16 @@ export async function POST(request: NextRequest) {
         </div>
 
         <div style="border-top: 1px solid #f1f5f9; padding-top: 16px; font-size: 11px; color: #94a3b8; text-align: center;">
-          <p style="margin: 0;">To restore this database, upload the attached JSON file in <strong>BytBuild &gt; Backup &amp; Recovery</strong>.</p>
-          <p style="margin: 4px 0 0 0;">&copy; ${new Date().getFullYear()} BytBuild Systems Inc. Confidential Business Backup.</p>
+          <p style="margin: 0;">To restore this database, upload the attached JSON file in <strong>bytBuild &gt; Backup &amp; Recovery</strong>.</p>
+          <p style="margin: 4px 0 0 0;">&copy; ${new Date().getFullYear()} bytBuild by byten. Confidential Business Backup for ${companyName || "MK Builders"}.</p>
         </div>
       </div>
     `;
 
     await transporter.sendMail({
-      from: `"BytBuild ERP Backup" <${gmailUser}>`,
+      from: `"bytBuild ERP Backup" <${gmailUser}>`,
       to: recipientEmail,
-      subject: `[BytBuild Backup] ${companyName || "BytBuild ERP"} - ${dateStr}`,
+      subject: `[bytBuild Backup] ${companyName || "MK Builders"} - ${dateStr}`,
       html: emailHtml,
       attachments: [
         {

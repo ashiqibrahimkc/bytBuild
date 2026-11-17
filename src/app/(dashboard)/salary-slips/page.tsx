@@ -1180,7 +1180,7 @@ function SalarySlipsContent() {
 
               {/* Footer Note */}
               <div className="pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400 font-mono">
-                System-generated computer payslip via BytBuild Construction ERP • Single monthly voucher rule verified.
+                System-generated computer payslip via bytBuild Construction ERP • Single monthly voucher rule verified.
               </div>
             </div>
           </div>

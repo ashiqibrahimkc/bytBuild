@@ -811,7 +811,7 @@ export default function VendorsPage() {
                       Vendor Statement of Account &amp; Payables Ledger
                     </p>
                     <p className="text-[10px] text-slate-500 font-mono">
-                      BytBuild Construction ERP • Procurement Division
+                      bytBuild Construction ERP • Procurement Division
                     </p>
                   </div>
                 </div>

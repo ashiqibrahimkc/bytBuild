@@ -76,16 +76,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {/* Footer */}
         <footer className="border-t border-slate-200 bg-white px-6 py-4 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 print:hidden">
           <span>
-            © 2026 <span className="font-bold text-slate-800">bytBuild</span>. Real Cash Flow &amp; Multi-Site Ledger.
+            © 2026 <span className="font-bold text-slate-800">bytBuild</span>. Real Cash Flow &amp; Multi-Site Ledger for <span className="font-semibold text-slate-700">MK Builders</span>.
           </span>
           <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-slate-400">Software by</span>
             <a
               href="https://www.byten.in"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-amber-700 hover:text-amber-800 hover:underline transition-colors"
+              className="font-mono text-amber-700 hover:text-amber-800 hover:underline font-bold transition-colors"
             >
-              www.byten.in
+              byten (www.byten.in)
             </a>
           </div>
         </footer>

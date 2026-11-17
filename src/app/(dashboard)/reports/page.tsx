@@ -702,7 +702,7 @@ export default function ReportsPage() {
               </div>
 
               <p className="text-xs font-semibold text-slate-500 font-mono">
-                BytBuild Financial ERP • Certified Multi-Site Statement
+                bytBuild Financial ERP • Certified Multi-Site Statement
               </p>
 
               <h2 className="text-sm sm:text-base font-bold text-slate-800 pt-0.5">

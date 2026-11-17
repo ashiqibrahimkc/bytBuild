@@ -494,7 +494,7 @@ export default function BackupPage() {
                 >
                   App Passwords <ExternalLink className="h-2.5 w-2.5" />
                 </a>{" "}
-                and create a password named &ldquo;BytBuild&rdquo;.
+                and create a password named &ldquo;bytBuild&rdquo;.
               </li>
               <li>Paste the 16-letter code into your <code>.env</code> file under <code>GMAIL_APP_PASSWORD</code>.</li>
             </ol>
