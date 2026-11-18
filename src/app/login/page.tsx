@@ -24,7 +24,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ status?: number; message: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function completeLogin(
     username: string,
@@ -56,7 +56,7 @@ export default function LoginPage() {
 
     const cleanId = identifier.trim();
     if (!cleanId || !password) {
-      setError({ message: "Please enter your username/email and password." });
+      setError("Please enter your username/email and password.");
       return;
     }
 
@@ -83,31 +83,26 @@ export default function LoginPage() {
         return;
       }
 
-      // Check HTTP error status codes and provide precise human-readable messages
-      const statusCode = res.status;
       let rawMessage = data?.message || "";
 
-      // Sanitize any accidental technical/API key messages
+      // Sanitize technical messages into clean user-facing error text
       if (!rawMessage || /api\s*key/i.test(rawMessage)) {
-        if (statusCode === 401) {
+        if (res.status === 401) {
           rawMessage = "Invalid username or password. Please verify your credentials.";
-        } else if (statusCode === 403) {
+        } else if (res.status === 403) {
           rawMessage = "This account has been deactivated. Please contact your administrator.";
-        } else if (statusCode === 503) {
+        } else if (res.status === 503) {
           rawMessage = "Database server is currently unavailable. Please verify PostgreSQL connection.";
         } else {
-          rawMessage = "Authentication failed. Please check your username and password.";
+          rawMessage = "Invalid credentials. Please verify your username and password.";
         }
       }
 
-      setError({ status: statusCode, message: rawMessage });
+      setError(rawMessage);
       setLoading(false);
     } catch (err: unknown) {
       console.error("Login authentication network error:", err);
-      setError({
-        status: 0,
-        message: "Unable to connect to authentication server. Please check your network connection.",
-      });
+      setError("Unable to connect to authentication server. Please check your network connection.");
       setLoading(false);
     }
   }
@@ -223,16 +218,9 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-xs flex items-start gap-2.5">
-              <Lock className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-              <div className="space-y-0.5">
-                {error.status ? (
-                  <span className="inline-block px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase rounded bg-red-100 text-red-800 mr-1.5">
-                    HTTP {error.status}
-                  </span>
-                ) : null}
-                <span className="font-medium leading-relaxed">{error.message}</span>
-              </div>
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-xs flex items-center gap-2.5">
+              <Lock className="h-4 w-4 text-red-500 shrink-0" />
+              <span className="font-medium leading-relaxed">{error}</span>
             </div>
           )}
 
@@ -309,49 +297,6 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
-
-          {/* Seeded Workspace Credentials Card */}
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <span className="font-semibold text-slate-700">MK Builders Workspace:</span>
-                <div className="text-[11px] font-mono text-slate-500">
-                  User: <span className="font-semibold text-amber-800">mkbuilders</span> • Pass: <span className="font-semibold text-amber-800">mkbuilders123</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setIdentifier("mkbuilders");
-                  setPassword("mkbuilders123");
-                  setError(null);
-                }}
-                className="px-2.5 py-1 text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-lg border border-amber-300 transition-colors cursor-pointer"
-              >
-                Fill MK Builders
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between pt-1.5 border-t border-slate-200/60">
-              <div className="space-y-0.5">
-                <span className="font-semibold text-slate-700">System Admin:</span>
-                <div className="text-[11px] font-mono text-slate-500">
-                  User: <span className="font-semibold text-amber-800">admin</span> • Pass: <span className="font-semibold text-amber-800">password123</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setIdentifier("admin");
-                  setPassword("password123");
-                  setError(null);
-                }}
-                className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-200/80 hover:bg-slate-300 rounded-lg border border-slate-300 transition-colors cursor-pointer"
-              >
-                Fill Admin
-              </button>
-            </div>
-          </div>
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
             <span className="flex items-center gap-1.5">
