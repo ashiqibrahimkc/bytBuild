@@ -251,29 +251,31 @@ export async function POST(request: NextRequest) {
     switch (action) {
       // ── Sites ──
       case "ADD_SITE": {
-        const created = await prisma.site.create({
-          data: {
-            name: payload.name,
-            clientName: payload.clientName,
-            location: payload.location || "",
-            status: payload.status || "ACTIVE",
-            estimatedBudget: payload.estimatedBudget || 0,
-            openingBalance: payload.openingBalance || 0,
-          } as any,
+        const siteData: Record<string, any> = {
+          name: payload.name,
+          clientName: payload.clientName,
+          location: payload.location || "",
+          status: payload.status || "ACTIVE",
+          estimatedBudget: payload.estimatedBudget || 0,
+          openingBalance: payload.openingBalance || 0,
+        };
+        const created = await (prisma as any).site.create({
+          data: siteData,
         });
         return NextResponse.json({ success: true, item: serializeSite(created) });
       }
       case "UPDATE_SITE": {
-        const updated = await prisma.site.update({
+        const updateData: Record<string, any> = {
+          name: payload.name,
+          clientName: payload.clientName,
+          location: payload.location || "",
+          status: payload.status,
+          estimatedBudget: payload.estimatedBudget || 0,
+          openingBalance: payload.openingBalance || 0,
+        };
+        const updated = await (prisma as any).site.update({
           where: { id: payload.id },
-          data: {
-            name: payload.name,
-            clientName: payload.clientName,
-            location: payload.location || "",
-            status: payload.status,
-            estimatedBudget: payload.estimatedBudget || 0,
-            openingBalance: payload.openingBalance || 0,
-          } as any,
+          data: updateData,
         });
         return NextResponse.json({ success: true, item: serializeSite(updated) });
       }
@@ -295,27 +297,29 @@ export async function POST(request: NextRequest) {
 
       // ── Vendors ──
       case "ADD_VENDOR": {
-        const created = await prisma.vendor.create({
-          data: {
-            name: payload.name,
-            phone: payload.phone || "",
-            tradeCategory: payload.tradeCategory || "",
-            notes: payload.notes || "",
-            openingBalance: payload.openingBalance || 0,
-          } as any,
+        const vendorData: Record<string, any> = {
+          name: payload.name,
+          phone: payload.phone || "",
+          tradeCategory: payload.tradeCategory || "",
+          notes: payload.notes || "",
+          openingBalance: payload.openingBalance || 0,
+        };
+        const created = await (prisma as any).vendor.create({
+          data: vendorData,
         });
         return NextResponse.json({ success: true, item: serializeVendor(created) });
       }
       case "UPDATE_VENDOR": {
-        const updated = await prisma.vendor.update({
+        const vendorData: Record<string, any> = {
+          name: payload.name,
+          phone: payload.phone || "",
+          tradeCategory: payload.tradeCategory || "",
+          notes: payload.notes || "",
+          openingBalance: payload.openingBalance || 0,
+        };
+        const updated = await (prisma as any).vendor.update({
           where: { id: payload.id },
-          data: {
-            name: payload.name,
-            phone: payload.phone || "",
-            tradeCategory: payload.tradeCategory || "",
-            notes: payload.notes || "",
-            openingBalance: payload.openingBalance || 0,
-          } as any,
+          data: vendorData,
         });
         return NextResponse.json({ success: true, item: serializeVendor(updated) });
       }
@@ -334,33 +338,35 @@ export async function POST(request: NextRequest) {
 
       // ── Workers ──
       case "ADD_WORKER": {
-        const created = await prisma.worker.create({
-          data: {
-            name: payload.name,
-            phone: payload.phone || "",
-            trade: payload.trade || "Helper",
-            compensationType: payload.compensationType || "DAILY_WAGE",
-            defaultDailyWage: payload.defaultDailyWage || 0,
-            monthlySalary: payload.monthlySalary || 0,
-            openingBalance: payload.openingBalance || 0,
-            isActive: payload.isActive !== false,
-          } as any,
+        const workerData: Record<string, any> = {
+          name: payload.name,
+          phone: payload.phone || "",
+          trade: payload.trade || "Helper",
+          compensationType: payload.compensationType || "DAILY_WAGE",
+          defaultDailyWage: payload.defaultDailyWage || 0,
+          monthlySalary: payload.monthlySalary || 0,
+          openingBalance: payload.openingBalance || 0,
+          isActive: payload.isActive !== false,
+        };
+        const created = await (prisma as any).worker.create({
+          data: workerData,
         });
         return NextResponse.json({ success: true, item: serializeWorker(created) });
       }
       case "UPDATE_WORKER": {
-        const updated = await prisma.worker.update({
+        const workerData: Record<string, any> = {
+          name: payload.name,
+          phone: payload.phone || "",
+          trade: payload.trade,
+          compensationType: payload.compensationType,
+          defaultDailyWage: payload.defaultDailyWage || 0,
+          monthlySalary: payload.monthlySalary || 0,
+          openingBalance: payload.openingBalance || 0,
+          isActive: payload.isActive !== false,
+        };
+        const updated = await (prisma as any).worker.update({
           where: { id: payload.id },
-          data: {
-            name: payload.name,
-            phone: payload.phone || "",
-            trade: payload.trade,
-            compensationType: payload.compensationType,
-            defaultDailyWage: payload.defaultDailyWage || 0,
-            monthlySalary: payload.monthlySalary || 0,
-            openingBalance: payload.openingBalance || 0,
-            isActive: payload.isActive !== false,
-          } as any,
+          data: workerData,
         });
         return NextResponse.json({ success: true, item: serializeWorker(updated) });
       }
