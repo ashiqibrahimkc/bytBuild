@@ -185,31 +185,6 @@ export default function SitesPage() {
     );
   }, []);
 
-  // ── STRICT RBAC ENFORCEMENT FOR ACCOUNTANT ─────────────────────────────
-  if (role === "ACCOUNTANT") {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-        <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mb-4 shadow-sm">
-          <ShieldAlert className="w-8 h-8" />
-        </div>
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Access Restricted to Owner</h2>
-        <p className="text-sm text-slate-500 max-w-md mt-2">
-          Sites and client project administration is restricted to the Company Owner and Site Managers. As an Accountant, you can manage cash flow, vendor bills, and worker wages.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link href="/cashflow">
-            <Button className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
-              Go to Cash Flow
-            </Button>
-          </Link>
-          <Link href="/reports">
-            <Button variant="outline">View Financial Reports</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   const handleCreateSite = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !clientName.trim()) return;
@@ -655,6 +630,31 @@ export default function SitesPage() {
 
   if (isDbLoading) {
     return <SitesSkeleton />;
+  }
+
+  // ── STRICT RBAC ENFORCEMENT FOR ACCOUNTANT ─────────────────────────────
+  if (role === "ACCOUNTANT") {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+        <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mb-4 shadow-sm">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Access Restricted to Owner</h2>
+        <p className="text-sm text-slate-500 max-w-md mt-2">
+          Sites and client project administration is restricted to the Company Owner and Site Managers. As an Accountant, you can manage cash flow, vendor bills, and worker wages.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/cashflow">
+            <Button className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
+              Go to Cash Flow
+            </Button>
+          </Link>
+          <Link href="/reports">
+            <Button variant="outline">View Financial Reports</Button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -87,10 +87,6 @@ export default function DashboardPage() {
   const [openExpense, setOpenExpense] = useState(false);
   const [selectedSiteId, setSelectedSiteId] = useState<string | undefined>(undefined);
 
-  if (isDbLoading) {
-    return <DashboardSkeleton />;
-  }
-
   const handleSiteAction = (
     siteId: string,
     action: "PURCHASE" | "WORK" | "EXPENSE" | "INCOME"
@@ -199,6 +195,10 @@ export default function DashboardPage() {
       },
     ];
   }, [role]);
+
+  if (isDbLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="space-y-8 pb-12">
