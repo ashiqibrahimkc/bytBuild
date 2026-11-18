@@ -89,13 +89,15 @@ export default function Sidebar({
   }, [pathname]);
 
   async function handleSignOut() {
-    // Clear session cookies for middleware
-    document.cookie = "bytbuild_session=; path=/; max-age=0; SameSite=Lax";
-    document.cookie = "buildflow_session=; path=/; max-age=0; SameSite=Lax";
-    localStorage.removeItem("bytbuild_user");
-    localStorage.removeItem("buildflow_user");
-    router.push("/login");
-    router.refresh();
+    // Clear session cookies for middleware with explicit past expiration
+    document.cookie = "bytbuild_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+    document.cookie = "buildflow_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+    try {
+      localStorage.removeItem("bytbuild_user");
+      localStorage.removeItem("buildflow_user");
+    } catch {}
+    // Clean full browser navigation to login page (purges all in-memory client state)
+    window.location.href = "/login";
   }
 
   const initials = userDisplay.name ? userDisplay.name.slice(0, 2).toUpperCase() : "OW";

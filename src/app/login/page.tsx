@@ -1,21 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  HardHat,
-  Building2,
-  Truck,
-  Users,
   Eye,
   EyeOff,
   Loader2,
   ShieldCheck,
   Lock,
-  Wallet,
 } from "lucide-react";
 
 export default function LoginPage() {
@@ -25,6 +20,12 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Guarantee loading and error are always reset whenever login page renders
+  useEffect(() => {
+    setLoading(false);
+    setError(null);
+  }, []);
 
   async function completeLogin(
     username: string,
@@ -44,10 +45,13 @@ export default function LoginPage() {
     document.cookie = `bytbuild_session=${encoded}; path=/; max-age=604800; SameSite=Lax`;
     document.cookie = `buildflow_session=${encoded}; path=/; max-age=604800; SameSite=Lax`;
 
-    localStorage.setItem("bytbuild_user", JSON.stringify(sessionData));
-    localStorage.setItem("buildflow_user", JSON.stringify(sessionData));
-    router.push("/");
-    router.refresh();
+    try {
+      localStorage.setItem("bytbuild_user", JSON.stringify(sessionData));
+      localStorage.setItem("buildflow_user", JSON.stringify(sessionData));
+    } catch {}
+
+    setLoading(false);
+    window.location.href = "/";
   }
 
   async function handleSignIn(e: React.FormEvent) {
@@ -136,12 +140,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="relative z-10 max-w-lg space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Role-Based Access Control Active</span>
-          </div>
-
+        <div className="relative z-10 max-w-lg space-y-4">
           <h1 className="text-4xl xl:text-5xl font-black tracking-tight leading-tight text-white">
             Multi-Site Construction Cash Flow &amp; Site ERP
           </h1>
@@ -150,27 +149,6 @@ export default function LoginPage() {
             Real-time tracking of company cash in hand, vendor credits, daily labor wages,
             overhead expenses, and certified client billing statements.
           </p>
-
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3.5">
-              <div className="flex items-center gap-2 text-amber-400 mb-1">
-                <Wallet className="h-4 w-4" />
-                <span className="font-bold text-xs uppercase font-mono">Liquid Treasury</span>
-              </div>
-              <p className="text-[11px] text-slate-400">
-                Live net cash in hand ledger with bank vs physical cash box tracking.
-              </p>
-            </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3.5">
-              <div className="flex items-center gap-2 text-blue-400 mb-1">
-                <Building2 className="h-4 w-4" />
-                <span className="font-bold text-xs uppercase font-mono">Multi-Site Ledger</span>
-              </div>
-              <p className="text-[11px] text-slate-400">
-                Scalable architecture supporting 100+ active construction sites simultaneously.
-              </p>
-            </div>
-          </div>
         </div>
 
         <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 border-t border-slate-800/80 pt-6">
@@ -200,21 +178,15 @@ export default function LoginPage() {
             <div>
               <span className="text-slate-900 text-xl font-bold">bytBuild</span>
               <span className="text-[10px] block text-slate-400 uppercase tracking-wider font-mono">
-                MK Builders Workspace
+                Construction ERP
               </span>
             </div>
           </div>
 
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-800 font-mono">
-              <span>Customer: MK Builders</span>
-            </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Sign In to Your Workspace
             </h2>
-            <p className="text-slate-500 text-sm">
-              Enter your registered username or email to access the MK Builders workspace.
-            </p>
           </div>
 
           {error && (
@@ -230,14 +202,14 @@ export default function LoginPage() {
                 htmlFor="identifier"
                 className="block text-xs font-semibold text-slate-700"
               >
-                Username or Email Address
+                Username/Email
               </label>
               <Input
                 id="identifier"
                 type="text"
                 autoComplete="username"
                 required
-                placeholder="Enter your username or email"
+                placeholder="Username/Email"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 disabled={loading}
