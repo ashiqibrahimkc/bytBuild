@@ -31,8 +31,33 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
+      // Check if user exists but has wrong password or is inactive
+      const existingUser = await prisma.appUser.findFirst({
+        where: {
+          OR: [
+            { username: { equals: cleanIdentifier, mode: "insensitive" } },
+            { email: { equals: cleanIdentifier, mode: "insensitive" } },
+          ],
+        },
+      });
+
+      if (existingUser && !existingUser.isActive) {
+        return NextResponse.json(
+          {
+            success: false,
+            status: 403,
+            message: "This account has been deactivated. Please contact your system administrator.",
+          },
+          { status: 403 }
+        );
+      }
+
       return NextResponse.json(
-        { success: false, message: "Invalid username or password." },
+        {
+          success: false,
+          status: 401,
+          message: "Invalid username or password. Please check your credentials.",
+        },
         { status: 401 }
       );
     }
@@ -68,10 +93,25 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Auth login API error:", error);
+    const errorMsg = String(error?.message || "");
+    if (errorMsg.includes("Can't reach database") || error?.code === "P1001") {
+      return NextResponse.json(
+        {
+          success: false,
+          status: 503,
+          message: "Database connection failed. Please ensure your PostgreSQL database is reachable.",
+        },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
-      { success: false, message: "Authentication service error. Please try again." },
+      {
+        success: false,
+        status: 500,
+        message: "Authentication service error. Please try again.",
+      },
       { status: 500 }
     );
   }
