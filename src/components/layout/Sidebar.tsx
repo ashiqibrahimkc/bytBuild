@@ -42,7 +42,7 @@ const ALL_NAV_LINKS: {
     { href: "/reports", label: "Financial Reports", icon: FileBarChart, permission: "reports" },
     { href: "/audit-logs", label: "Audit Logs", icon: History, permission: "audit-logs" },
     { href: "/team-roles", label: "Team & Permissions", icon: Key, permission: "team-roles" },
-    { href: "/backup", label: "Gmail Backup & Sync", icon: CloudDownload, permission: "backup" },
+    { href: "/backup", label: "Backup & CSV Export", icon: CloudDownload, permission: "backup" },
   ];
 
 interface SidebarProps {

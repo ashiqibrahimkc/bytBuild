@@ -45,7 +45,7 @@ const ALL_PAGES: { id: PagePermission; label: string; desc: string; icon: React.
   { id: "reports", label: "Financial Reports", desc: "Audited accountant model reports", icon: FileBarChart },
   { id: "audit-logs", label: "Audit Logs", desc: "Security audit trail (Owner)", icon: History },
   { id: "team-roles", label: "Team & Permissions", desc: "User creation & page RBAC", icon: Key },
-  { id: "backup", label: "Gmail Backup & Restore", desc: "Email cloud backups & disaster recovery", icon: CloudDownload },
+  { id: "backup", label: "Backup & CSV Export", desc: "CSV export, offline backups & recovery", icon: CloudDownload },
 ];
 
 export default function TeamRolesPage() {
