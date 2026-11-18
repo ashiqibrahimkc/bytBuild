@@ -393,6 +393,20 @@ export async function POST(request: NextRequest) {
         });
         return NextResponse.json({ success: true, item: serializePurchase(created) });
       }
+      case "UPDATE_PURCHASE": {
+        const updated = await prisma.vendorPurchase.update({
+          where: { id: payload.id },
+          data: {
+            ...(payload.vendorId ? { vendorId: payload.vendorId } : {}),
+            ...(payload.siteId ? { siteId: payload.siteId } : {}),
+            ...(payload.purchaseDate ? { purchaseDate: new Date(payload.purchaseDate) } : {}),
+            ...(payload.amount !== undefined ? { amount: payload.amount } : {}),
+            ...(payload.voucherNo !== undefined ? { voucherNo: payload.voucherNo || "" } : {}),
+            ...(payload.notes !== undefined ? { notes: payload.notes || "" } : {}),
+          },
+        });
+        return NextResponse.json({ success: true, item: serializePurchase(updated) });
+      }
       case "DELETE_PURCHASE": {
         await prisma.vendorPurchase.delete({ where: { id: payload.id } });
         return NextResponse.json({ success: true, id: payload.id });
@@ -413,6 +427,21 @@ export async function POST(request: NextRequest) {
         });
         return NextResponse.json({ success: true, item: serializeVendorPayment(created) });
       }
+      case "UPDATE_VENDOR_PAYMENT": {
+        const updated = await prisma.vendorPayment.update({
+          where: { id: payload.id },
+          data: {
+            ...(payload.vendorId ? { vendorId: payload.vendorId } : {}),
+            ...(payload.siteId !== undefined ? { siteId: payload.siteId || null } : {}),
+            ...(payload.paymentDate ? { paymentDate: new Date(payload.paymentDate) } : {}),
+            ...(payload.amount !== undefined ? { amount: payload.amount } : {}),
+            ...(payload.paymentMode ? { paymentMode: payload.paymentMode } : {}),
+            ...(payload.voucherNo !== undefined ? { voucherNo: payload.voucherNo || "" } : {}),
+            ...(payload.notes !== undefined ? { notes: payload.notes || "" } : {}),
+          },
+        });
+        return NextResponse.json({ success: true, item: serializeVendorPayment(updated) });
+      }
       case "DELETE_VENDOR_PAYMENT": {
         await prisma.vendorPayment.delete({ where: { id: payload.id } });
         return NextResponse.json({ success: true, id: payload.id });
@@ -430,6 +459,19 @@ export async function POST(request: NextRequest) {
           },
         });
         return NextResponse.json({ success: true, item: serializeWorkLog(created) });
+      }
+      case "UPDATE_WORK_LOG": {
+        const updated = await prisma.workerWorkLog.update({
+          where: { id: payload.id },
+          data: {
+            ...(payload.workerId ? { workerId: payload.workerId } : {}),
+            ...(payload.siteId ? { siteId: payload.siteId } : {}),
+            ...(payload.workDate ? { workDate: new Date(payload.workDate) } : {}),
+            ...(payload.wageAmount !== undefined ? { wageAmount: payload.wageAmount } : {}),
+            ...(payload.notes !== undefined ? { notes: payload.notes || "" } : {}),
+          },
+        });
+        return NextResponse.json({ success: true, item: serializeWorkLog(updated) });
       }
       case "DELETE_WORK_LOG": {
         await prisma.workerWorkLog.delete({ where: { id: payload.id } });
@@ -449,6 +491,20 @@ export async function POST(request: NextRequest) {
           },
         });
         return NextResponse.json({ success: true, item: serializeWorkerPayment(created) });
+      }
+      case "UPDATE_WORKER_PAYMENT": {
+        const updated = await prisma.workerPayment.update({
+          where: { id: payload.id },
+          data: {
+            ...(payload.workerId ? { workerId: payload.workerId } : {}),
+            ...(payload.paymentDate ? { paymentDate: new Date(payload.paymentDate) } : {}),
+            ...(payload.amount !== undefined ? { amount: payload.amount } : {}),
+            ...(payload.paymentMode ? { paymentMode: payload.paymentMode } : {}),
+            ...(payload.voucherNo !== undefined ? { voucherNo: payload.voucherNo || "" } : {}),
+            ...(payload.notes !== undefined ? { notes: payload.notes || "" } : {}),
+          },
+        });
+        return NextResponse.json({ success: true, item: serializeWorkerPayment(updated) });
       }
       case "DELETE_WORKER_PAYMENT": {
         await prisma.workerPayment.delete({ where: { id: payload.id } });
@@ -470,6 +526,21 @@ export async function POST(request: NextRequest) {
         });
         return NextResponse.json({ success: true, item: serializeSiteIncome(created) });
       }
+      case "UPDATE_SITE_INCOME": {
+        const updated = await prisma.siteIncome.update({
+          where: { id: payload.id },
+          data: {
+            ...(payload.siteId ? { siteId: payload.siteId } : {}),
+            ...(payload.incomeDate ? { incomeDate: new Date(payload.incomeDate) } : {}),
+            ...(payload.amount !== undefined ? { amount: payload.amount } : {}),
+            ...(payload.paymentMode ? { paymentMode: payload.paymentMode } : {}),
+            ...(payload.referenceNo !== undefined ? { referenceNo: payload.referenceNo || "" } : {}),
+            ...(payload.receivedFrom !== undefined ? { receivedFrom: payload.receivedFrom || "" } : {}),
+            ...(payload.notes !== undefined ? { notes: payload.notes || "" } : {}),
+          },
+        });
+        return NextResponse.json({ success: true, item: serializeSiteIncome(updated) });
+      }
       case "DELETE_SITE_INCOME": {
         await prisma.siteIncome.delete({ where: { id: payload.id } });
         return NextResponse.json({ success: true, id: payload.id });
@@ -490,6 +561,22 @@ export async function POST(request: NextRequest) {
           },
         });
         return NextResponse.json({ success: true, item: serializeCompanyExpense(created) });
+      }
+      case "UPDATE_EXPENSE": {
+        const updated = await prisma.companyExpense.update({
+          where: { id: payload.id },
+          data: {
+            ...(payload.siteId !== undefined ? { siteId: payload.siteId || null } : {}),
+            ...(payload.workerId !== undefined ? { workerId: payload.workerId || null } : {}),
+            ...(payload.category ? { category: payload.category } : {}),
+            ...(payload.expenseDate ? { expenseDate: new Date(payload.expenseDate) } : {}),
+            ...(payload.amount !== undefined ? { amount: payload.amount } : {}),
+            ...(payload.paymentMode ? { paymentMode: payload.paymentMode } : {}),
+            ...(payload.voucherNo !== undefined ? { voucherNo: payload.voucherNo || "" } : {}),
+            ...(payload.notes !== undefined ? { notes: payload.notes || "" } : {}),
+          },
+        });
+        return NextResponse.json({ success: true, item: serializeCompanyExpense(updated) });
       }
       case "DELETE_EXPENSE": {
         await prisma.companyExpense.delete({ where: { id: payload.id } });

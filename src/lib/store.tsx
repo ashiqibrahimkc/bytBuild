@@ -87,11 +87,23 @@ interface ConstructionContextType {
 
   // Interconnected Actions
   recordMaterialPurchase: (purchase: Omit<VendorPurchase, "id" | "createdAt">) => void;
+  updateVendorPurchase: (id: string, purchase: Partial<Omit<VendorPurchase, "id" | "createdAt">>) => void;
+  deleteVendorPurchase: (id: string) => void;
   recordVendorPayment: (payment: Omit<VendorPayment, "id" | "createdAt">) => void;
+  updateVendorPayment: (id: string, payment: Partial<Omit<VendorPayment, "id" | "createdAt">>) => void;
+  deleteVendorPayment: (id: string) => void;
   assignWorkerWorkLog: (log: Omit<WorkerWorkLog, "id" | "createdAt">) => void;
+  updateWorkerWorkLog: (id: string, log: Partial<Omit<WorkerWorkLog, "id" | "createdAt">>) => void;
+  deleteWorkerWorkLog: (id: string) => void;
   recordWorkerPayment: (payment: Omit<WorkerPayment, "id" | "createdAt">) => void;
+  updateWorkerPayment: (id: string, payment: Partial<Omit<WorkerPayment, "id" | "createdAt">>) => void;
+  deleteWorkerPayment: (id: string) => void;
   recordSiteIncome: (income: Omit<SiteIncome, "id" | "createdAt">) => void;
+  updateSiteIncome: (id: string, income: Partial<Omit<SiteIncome, "id" | "createdAt">>) => void;
+  deleteSiteIncome: (id: string) => void;
   recordCompanyExpense: (expense: Omit<CompanyExpense, "id" | "createdAt">) => void;
+  updateCompanyExpense: (id: string, expense: Partial<Omit<CompanyExpense, "id" | "createdAt">>) => void;
+  deleteCompanyExpense: (id: string) => void;
 
   // Calculated Metrics
   getVendorStats: (vendorId: string) => {
@@ -900,6 +912,157 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     );
   };
 
+  // ─── Edit & Delete Operational Transactions ──────────────────────────────
+  const updateVendorPurchase = (id: string, updates: Partial<Omit<VendorPurchase, "id" | "createdAt">>) => {
+    setVendorPurchases((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+    );
+    apiMutation("UPDATE_PURCHASE", { id, ...updates });
+    logAudit(
+      "UPDATE_PURCHASE",
+      "VendorPurchase",
+      id,
+      `Updated purchase bill #${updates.voucherNo || id} (Amount: ₹${updates.amount ?? "unchanged"})`
+    );
+  };
+
+  const deleteVendorPurchase = (id: string) => {
+    const target = vendorPurchases.find((p) => p.id === id);
+    setVendorPurchases((prev) => prev.filter((p) => p.id !== id));
+    apiMutation("DELETE_PURCHASE", { id });
+    logAudit(
+      "DELETE_PURCHASE",
+      "VendorPurchase",
+      id,
+      `Deleted purchase bill of ₹${target?.amount || 0} (Voucher: #${target?.voucherNo || "N/A"})`
+    );
+  };
+
+  const updateWorkerWorkLog = (id: string, updates: Partial<Omit<WorkerWorkLog, "id" | "createdAt">>) => {
+    setWorkerWorkLogs((prev) =>
+      prev.map((w) => (w.id === id ? { ...w, ...updates } : w))
+    );
+    apiMutation("UPDATE_WORK_LOG", { id, ...updates });
+    logAudit(
+      "UPDATE_WORK_LOG",
+      "WorkerWorkLog",
+      id,
+      `Updated worker wage log (Wage: ₹${updates.wageAmount ?? "unchanged"})`
+    );
+  };
+
+  const deleteWorkerWorkLog = (id: string) => {
+    const target = workerWorkLogs.find((w) => w.id === id);
+    setWorkerWorkLogs((prev) => prev.filter((w) => w.id !== id));
+    apiMutation("DELETE_WORK_LOG", { id });
+    logAudit(
+      "DELETE_WORK_LOG",
+      "WorkerWorkLog",
+      id,
+      `Deleted worker wage log of ₹${target?.wageAmount || 0}`
+    );
+  };
+
+  const updateCompanyExpense = (id: string, updates: Partial<Omit<CompanyExpense, "id" | "createdAt">>) => {
+    setCompanyExpenses((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
+    );
+    apiMutation("UPDATE_EXPENSE", { id, ...updates });
+    logAudit(
+      "UPDATE_EXPENSE",
+      "CompanyExpense",
+      id,
+      `Updated expense record under "${updates.category || "General"}" (Amount: ₹${updates.amount ?? "unchanged"})`
+    );
+  };
+
+  const deleteCompanyExpense = (id: string) => {
+    const target = companyExpenses.find((e) => e.id === id);
+    setCompanyExpenses((prev) => prev.filter((e) => e.id !== id));
+    apiMutation("DELETE_EXPENSE", { id });
+    logAudit(
+      "DELETE_EXPENSE",
+      "CompanyExpense",
+      id,
+      `Deleted expense record of ₹${target?.amount || 0} (${target?.category || "Expense"})`
+    );
+  };
+
+  const updateSiteIncome = (id: string, updates: Partial<Omit<SiteIncome, "id" | "createdAt">>) => {
+    setSiteIncomes((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, ...updates } : i))
+    );
+    apiMutation("UPDATE_SITE_INCOME", { id, ...updates });
+    logAudit(
+      "UPDATE_SITE_INCOME",
+      "SiteIncome",
+      id,
+      `Updated client inflow of ₹${updates.amount ?? "unchanged"} (Ref: ${updates.referenceNo || "N/A"})`
+    );
+  };
+
+  const deleteSiteIncome = (id: string) => {
+    const target = siteIncomes.find((i) => i.id === id);
+    setSiteIncomes((prev) => prev.filter((i) => i.id !== id));
+    apiMutation("DELETE_SITE_INCOME", { id });
+    logAudit(
+      "DELETE_SITE_INCOME",
+      "SiteIncome",
+      id,
+      `Deleted client inflow of ₹${target?.amount || 0} (Ref: ${target?.referenceNo || "N/A"})`
+    );
+  };
+
+  const updateVendorPayment = (id: string, updates: Partial<Omit<VendorPayment, "id" | "createdAt">>) => {
+    setVendorPayments((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+    );
+    apiMutation("UPDATE_VENDOR_PAYMENT", { id, ...updates });
+    logAudit(
+      "UPDATE_VENDOR_PAYMENT",
+      "VendorPayment",
+      id,
+      `Updated vendor payment of ₹${updates.amount ?? "unchanged"} (Voucher: #${updates.voucherNo || "N/A"})`
+    );
+  };
+
+  const deleteVendorPayment = (id: string) => {
+    const target = vendorPayments.find((p) => p.id === id);
+    setVendorPayments((prev) => prev.filter((p) => p.id !== id));
+    apiMutation("DELETE_VENDOR_PAYMENT", { id });
+    logAudit(
+      "DELETE_VENDOR_PAYMENT",
+      "VendorPayment",
+      id,
+      `Deleted vendor payment of ₹${target?.amount || 0} (Voucher: #${target?.voucherNo || "N/A"})`
+    );
+  };
+
+  const updateWorkerPayment = (id: string, updates: Partial<Omit<WorkerPayment, "id" | "createdAt">>) => {
+    setWorkerPayments((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+    );
+    apiMutation("UPDATE_WORKER_PAYMENT", { id, ...updates });
+    logAudit(
+      "UPDATE_WORKER_PAYMENT",
+      "WorkerPayment",
+      id,
+      `Updated worker disbursement of ₹${updates.amount ?? "unchanged"} (Voucher: #${updates.voucherNo || "N/A"})`
+    );
+  };
+
+  const deleteWorkerPayment = (id: string) => {
+    const target = workerPayments.find((p) => p.id === id);
+    setWorkerPayments((prev) => prev.filter((p) => p.id !== id));
+    apiMutation("DELETE_WORKER_PAYMENT", { id });
+    logAudit(
+      "DELETE_WORKER_PAYMENT",
+      "WorkerPayment",
+      id,
+      `Deleted worker disbursement of ₹${target?.amount || 0} (Voucher: #${target?.voucherNo || "N/A"})`
+    );
+  };
+
   // ─── Salary Slips & Monthly Payroll Management ──────────────────────────
   const getWorkerMonthlySalaryInfo = (workerId: string, monthYear: string) => {
     const worker = workers.find((w) => w.id === workerId);
@@ -1560,11 +1723,23 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
         updateWorker,
         deleteWorker,
         recordMaterialPurchase,
+        updateVendorPurchase,
+        deleteVendorPurchase,
         recordVendorPayment,
+        updateVendorPayment,
+        deleteVendorPayment,
         assignWorkerWorkLog,
+        updateWorkerWorkLog,
+        deleteWorkerWorkLog,
         recordWorkerPayment,
+        updateWorkerPayment,
+        deleteWorkerPayment,
         recordSiteIncome,
+        updateSiteIncome,
+        deleteSiteIncome,
         recordCompanyExpense,
+        updateCompanyExpense,
+        deleteCompanyExpense,
         getVendorStats,
         getWorkerStats,
         getSiteStats,

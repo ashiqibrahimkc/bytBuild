@@ -25,7 +25,7 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
-import { Site, SiteStatus } from "@/lib/types";
+import { Site, SiteStatus, PaymentMode, ExpenseCategory } from "@/lib/types";
 import { useConstruction } from "@/lib/store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -52,6 +52,14 @@ export default function SitesPage() {
     addSite,
     updateSite,
     deleteSite,
+    updateVendorPurchase,
+    deleteVendorPurchase,
+    updateWorkerWorkLog,
+    deleteWorkerWorkLog,
+    updateCompanyExpense,
+    deleteCompanyExpense,
+    updateSiteIncome,
+    deleteSiteIncome,
   } = useConstruction();
 
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
@@ -303,6 +311,7 @@ export default function SitesPage() {
   // Unified Site Statement Entry Interface
   interface SiteLedgerEntry {
     id: string;
+    rawId: string;
     date: string;
     type: "MATERIAL" | "LABOR" | "EXPENSE" | "INCOME" | "OPENING_BALANCE";
     typeLabel: string;
@@ -312,6 +321,7 @@ export default function SitesPage() {
     amount: number;
     isInflow: boolean;
     rawCreatedAt?: string;
+    rawRecord?: any;
   }
 
   // Combined all transactions sorted DATE-WISE (LATEST IN FIRST)
@@ -325,6 +335,7 @@ export default function SitesPage() {
       const ven = vendors.find((v) => v.id === p.vendorId);
       entries.push({
         id: `pur-${p.id}`,
+        rawId: p.id,
         date: p.purchaseDate,
         type: "MATERIAL",
         typeLabel: "Material Bill",
@@ -334,6 +345,7 @@ export default function SitesPage() {
         amount: Number(p.amount),
         isInflow: false,
         rawCreatedAt: p.createdAt,
+        rawRecord: p,
       });
     });
 
@@ -342,6 +354,7 @@ export default function SitesPage() {
       const worker = workers.find((wk) => wk.id === w.workerId);
       entries.push({
         id: `work-${w.id}`,
+        rawId: w.id,
         date: w.workDate,
         type: "LABOR",
         typeLabel: "Labor Wage",
@@ -351,6 +364,7 @@ export default function SitesPage() {
         amount: Number(w.wageAmount),
         isInflow: false,
         rawCreatedAt: w.createdAt,
+        rawRecord: w,
       });
     });
 
@@ -384,6 +398,7 @@ export default function SitesPage() {
 
       entries.push({
         id: `exp-${e.id}`,
+        rawId: e.id,
         date: e.expenseDate,
         type: "EXPENSE",
         typeLabel: e.category === "OUTSIDE_LABOR" ? "Outside Labour" : "Site Expense",
@@ -393,6 +408,7 @@ export default function SitesPage() {
         amount: Number(e.amount),
         isInflow: false,
         rawCreatedAt: e.createdAt,
+        rawRecord: e,
       });
     });
 
@@ -400,6 +416,7 @@ export default function SitesPage() {
     allSiteIncomes.forEach((i) => {
       entries.push({
         id: `inc-${i.id}`,
+        rawId: i.id,
         date: i.incomeDate,
         type: "INCOME",
         typeLabel: "Client Inflow",
@@ -409,6 +426,7 @@ export default function SitesPage() {
         amount: Number(i.amount),
         isInflow: true,
         rawCreatedAt: i.createdAt,
+        rawRecord: i,
       });
     });
 
@@ -420,6 +438,7 @@ export default function SitesPage() {
     ) {
       entries.push({
         id: `op-${currentSite.id}`,
+        rawId: currentSite.id,
         date: currentSite.createdAt,
         type: "OPENING_BALANCE",
         typeLabel: "Opening Advance",
@@ -429,6 +448,7 @@ export default function SitesPage() {
         amount: Number(currentSite.openingBalance),
         isInflow: true,
         rawCreatedAt: currentSite.createdAt,
+        rawRecord: currentSite,
       });
     }
 
@@ -454,6 +474,118 @@ export default function SitesPage() {
     startDate,
     endDate,
   ]);
+
+  // ── Unified Ledger Edit & Delete States ──
+  const [editingLedgerEntry, setEditingLedgerEntry] = useState<SiteLedgerEntry | null>(null);
+  const [deletingLedgerEntry, setDeletingLedgerEntry] = useState<SiteLedgerEntry | null>(null);
+
+  // Edit Form Fields
+  const [editEntryDate, setEditEntryDate] = useState("");
+  const [editEntryAmount, setEditEntryAmount] = useState("");
+  const [editEntryVoucherNo, setEditEntryVoucherNo] = useState("");
+  const [editEntryNotes, setEditEntryNotes] = useState("");
+  const [editEntryVendorId, setEditEntryVendorId] = useState("");
+  const [editEntryWorkerId, setEditEntryWorkerId] = useState("");
+  const [editEntryCategory, setEditEntryCategory] = useState<ExpenseCategory>("MISCELLANEOUS");
+  const [editEntryPaymentMode, setEditEntryPaymentMode] = useState<PaymentMode>("CASH");
+  const [editEntryReceivedFrom, setEditEntryReceivedFrom] = useState("");
+
+  const openEditLedgerEntry = (entry: SiteLedgerEntry) => {
+    setEditingLedgerEntry(entry);
+    setEditEntryDate(entry.date);
+    setEditEntryAmount(entry.amount.toString());
+    setEditEntryVoucherNo(entry.voucherNo || "");
+    setEditEntryNotes(entry.rawRecord?.notes || "");
+
+    if (entry.type === "MATERIAL") {
+      setEditEntryVendorId(entry.rawRecord?.vendorId || vendors[0]?.id || "");
+    } else if (entry.type === "LABOR") {
+      setEditEntryWorkerId(entry.rawRecord?.workerId || workers[0]?.id || "");
+    } else if (entry.type === "EXPENSE") {
+      setEditEntryCategory(entry.rawRecord?.category || "MISCELLANEOUS");
+      setEditEntryPaymentMode(entry.rawRecord?.paymentMode || "CASH");
+    } else if (entry.type === "INCOME") {
+      setEditEntryReceivedFrom(entry.rawRecord?.receivedFrom || "");
+      setEditEntryPaymentMode(entry.rawRecord?.paymentMode || "BANK_TRANSFER");
+      setEditEntryVoucherNo(entry.rawRecord?.referenceNo || "");
+    }
+  };
+
+  const openDeleteLedgerEntry = (entry: SiteLedgerEntry) => {
+    setDeletingLedgerEntry(entry);
+  };
+
+  const handleSaveLedgerEntry = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingLedgerEntry) return;
+
+    const amountNum = parseFloat(editEntryAmount) || 0;
+
+    if (editingLedgerEntry.type === "MATERIAL") {
+      updateVendorPurchase(editingLedgerEntry.rawId, {
+        purchaseDate: editEntryDate,
+        vendorId: editEntryVendorId,
+        amount: amountNum,
+        voucherNo: editEntryVoucherNo.trim(),
+        notes: editEntryNotes.trim(),
+      });
+    } else if (editingLedgerEntry.type === "LABOR") {
+      updateWorkerWorkLog(editingLedgerEntry.rawId, {
+        workDate: editEntryDate,
+        workerId: editEntryWorkerId,
+        wageAmount: amountNum,
+        notes: editEntryNotes.trim(),
+      });
+    } else if (editingLedgerEntry.type === "EXPENSE") {
+      updateCompanyExpense(editingLedgerEntry.rawId, {
+        expenseDate: editEntryDate,
+        category: editEntryCategory,
+        amount: amountNum,
+        paymentMode: editEntryPaymentMode,
+        voucherNo: editEntryVoucherNo.trim(),
+        notes: editEntryNotes.trim(),
+      });
+    } else if (editingLedgerEntry.type === "INCOME") {
+      updateSiteIncome(editingLedgerEntry.rawId, {
+        incomeDate: editEntryDate,
+        amount: amountNum,
+        paymentMode: editEntryPaymentMode,
+        referenceNo: editEntryVoucherNo.trim(),
+        receivedFrom: editEntryReceivedFrom.trim(),
+        notes: editEntryNotes.trim(),
+      });
+    } else if (editingLedgerEntry.type === "OPENING_BALANCE") {
+      if (currentSite) {
+        updateSite(currentSite.id, {
+          openingBalance: amountNum,
+        });
+      }
+    }
+
+    setEditingLedgerEntry(null);
+  };
+
+  const handleConfirmDeleteLedgerEntry = () => {
+    if (!deletingLedgerEntry) return;
+
+    if (deletingLedgerEntry.type === "MATERIAL") {
+      deleteVendorPurchase(deletingLedgerEntry.rawId);
+    } else if (deletingLedgerEntry.type === "LABOR") {
+      deleteWorkerWorkLog(deletingLedgerEntry.rawId);
+    } else if (deletingLedgerEntry.type === "EXPENSE") {
+      deleteCompanyExpense(deletingLedgerEntry.rawId);
+    } else if (deletingLedgerEntry.type === "INCOME") {
+      deleteSiteIncome(deletingLedgerEntry.rawId);
+    } else if (deletingLedgerEntry.type === "OPENING_BALANCE") {
+      if (currentSite) {
+        updateSite(currentSite.id, {
+          openingBalance: 0,
+        });
+      }
+    }
+
+    setDeletingLedgerEntry(null);
+  };
 
   // Filtered entries by category and search term
   const filteredStatementEntries = useMemo(() => {
@@ -1220,12 +1352,13 @@ export default function SitesPage() {
                     <th className="py-2.5 px-3">Party / Description</th>
                     <th className="py-2.5 px-3">Voucher / Ref #</th>
                     <th className="py-2.5 px-3 text-right">Amount (₹)</th>
+                    <th className="py-2.5 px-3 text-right print:hidden">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
                   {paginatedStatementEntries.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-400 italic">
+                      <td colSpan={6} className="py-8 text-center text-slate-400 italic">
                         No transactions, material bills, wage logs, or expenses recorded for this site project.
                       </td>
                     </tr>
@@ -1245,7 +1378,7 @@ export default function SitesPage() {
                           : "bg-purple-50 text-purple-700 border-purple-200";
 
                       return (
-                        <tr key={entry.id} className="hover:bg-slate-50/70 transition-colors">
+                        <tr key={entry.id} className="hover:bg-slate-50/70 transition-colors group">
                           <td className="py-2.5 px-3 font-mono text-slate-600 font-medium whitespace-nowrap">
                             {formatDate(entry.date)}
                           </td>
@@ -1275,6 +1408,26 @@ export default function SitesPage() {
                                 ? `+${formatCurrency(entry.amount)}`
                                 : `-${formatCurrency(entry.amount)}`}
                             </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-right whitespace-nowrap print:hidden">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => openEditLedgerEntry(entry)}
+                                title="Edit Transaction"
+                                className="p-1 rounded text-slate-400 hover:text-amber-700 hover:bg-amber-50 cursor-pointer transition-colors"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openDeleteLedgerEntry(entry)}
+                                title="Delete Transaction"
+                                className="p-1 rounded text-slate-400 hover:text-rose-700 hover:bg-rose-50 cursor-pointer transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1646,6 +1799,256 @@ export default function SitesPage() {
           </Modal>
         );
       })()}
+
+      {/* ── Edit Site Ledger Entry Modal ── */}
+      <Modal
+        isOpen={!!editingLedgerEntry}
+        onClose={() => setEditingLedgerEntry(null)}
+        title={`Edit ${editingLedgerEntry?.typeLabel || "Transaction"}`}
+        description={`Modify transaction details for this ${editingLedgerEntry?.typeLabel.toLowerCase() || "entry"} on ${currentSite?.name || "this site"}.`}
+      >
+        <form onSubmit={handleSaveLedgerEntry} className="space-y-4 pt-2">
+          {/* Date & Amount */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Date *
+              </label>
+              <Input
+                type="date"
+                required
+                value={editEntryDate}
+                onChange={(e) => setEditEntryDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Amount (₹) *
+              </label>
+              <Input
+                type="number"
+                min="0.01"
+                step="0.01"
+                required
+                placeholder="0.00"
+                value={editEntryAmount}
+                onChange={(e) => setEditEntryAmount(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Conditional type-specific fields */}
+          {editingLedgerEntry?.type === "MATERIAL" && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Vendor / Supplier *
+              </label>
+              <select
+                required
+                value={editEntryVendorId}
+                onChange={(e) => setEditEntryVendorId(e.target.value)}
+                className="w-full h-10 px-3 text-sm rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+              >
+                {vendors.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name} {v.tradeCategory ? `(${v.tradeCategory})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {editingLedgerEntry?.type === "LABOR" && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Worker Name *
+              </label>
+              <select
+                required
+                value={editEntryWorkerId}
+                onChange={(e) => setEditEntryWorkerId(e.target.value)}
+                className="w-full h-10 px-3 text-sm rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              >
+                {workers.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} {w.trade ? `(${w.trade})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {editingLedgerEntry?.type === "EXPENSE" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Expense Category *
+                </label>
+                <select
+                  value={editEntryCategory}
+                  onChange={(e) => setEditEntryCategory(e.target.value as ExpenseCategory)}
+                  className="w-full h-10 px-3 text-sm rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="OUTSIDE_LABOR">Outside Labour (Immediate Wage)</option>
+                  <option value="ROOM_RENT">Room / Labour Camp Rent</option>
+                  <option value="PETROL_FUEL">Company Petrol &amp; Vehicle Fuel</option>
+                  <option value="FOOD_TEA_REFRESHMENTS">Worker Mess &amp; Tea Refreshments</option>
+                  <option value="MACHINERY_RENT">Machinery &amp; Equipment Rental</option>
+                  <option value="OFFICE_OVERHEAD">Office Overhead / Electricity</option>
+                  <option value="SITE_PERMIT_FEES">Site Permit &amp; Municipal Fees</option>
+                  <option value="MISCELLANEOUS">Other Miscellaneous</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Payment Mode *
+                </label>
+                <select
+                  value={editEntryPaymentMode}
+                  onChange={(e) => setEditEntryPaymentMode(e.target.value as PaymentMode)}
+                  className="w-full h-10 px-3 text-sm rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="CASH">Cash in Hand</option>
+                  <option value="BANK_TRANSFER">Bank Transfer (NEFT/IMPS)</option>
+                  <option value="UPI">UPI / GPay / PhonePe</option>
+                  <option value="CHEQUE">Cheque</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {editingLedgerEntry?.type === "INCOME" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Received From
+                </label>
+                <Input
+                  placeholder="e.g. Client name / Owner"
+                  value={editEntryReceivedFrom}
+                  onChange={(e) => setEditEntryReceivedFrom(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Payment Mode *
+                </label>
+                <select
+                  value={editEntryPaymentMode}
+                  onChange={(e) => setEditEntryPaymentMode(e.target.value as PaymentMode)}
+                  className="w-full h-10 px-3 text-sm rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="BANK_TRANSFER">Bank Transfer (NEFT/RTGS)</option>
+                  <option value="CHEQUE">Cheque</option>
+                  <option value="CASH">Cash in Hand</option>
+                  <option value="UPI">UPI / Online</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Voucher / Ref # & Notes */}
+          {editingLedgerEntry?.type !== "OPENING_BALANCE" && (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {editingLedgerEntry?.type === "INCOME" ? "Transaction / Cheque Ref #" : "Voucher / Bill #"}
+                </label>
+                <Input
+                  placeholder="e.g. V-1024 or Cheque #"
+                  value={editEntryVoucherNo}
+                  onChange={(e) => setEditEntryVoucherNo(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Description / Remarks
+                </label>
+                <Input
+                  placeholder="e.g. 50 bags OPC cement, plastering day work, etc."
+                  value={editEntryNotes}
+                  onChange={(e) => setEditEntryNotes(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditingLedgerEntry(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
+            >
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ── Delete Confirmation Modal ── */}
+      <Modal
+        isOpen={!!deletingLedgerEntry}
+        onClose={() => setDeletingLedgerEntry(null)}
+        title={`Delete ${deletingLedgerEntry?.typeLabel || "Transaction"}`}
+        description="Are you sure you want to remove this record? This action will adjust the site financials immediately."
+      >
+        <div className="space-y-4 pt-2">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500 font-mono">Date:</span>
+              <span className="font-bold text-slate-800">{deletingLedgerEntry?.date && formatDate(deletingLedgerEntry.date)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500 font-mono">Record Type:</span>
+              <Badge variant="outline" className="font-bold">
+                {deletingLedgerEntry?.typeLabel}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500 font-mono">Party / Details:</span>
+              <span className="font-semibold text-slate-800 text-right">{deletingLedgerEntry?.title}</span>
+            </div>
+            {deletingLedgerEntry?.voucherNo && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-mono">Voucher / Ref:</span>
+                <span className="font-mono font-bold text-amber-800">#{deletingLedgerEntry.voucherNo}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-xs border-t border-slate-200 pt-2">
+              <span className="text-slate-500 font-mono">Amount:</span>
+              <span className={`font-mono font-bold text-sm ${deletingLedgerEntry?.isInflow ? "text-emerald-600" : "text-rose-600"}`}>
+                {deletingLedgerEntry?.isInflow ? "+" : "-"}{formatCurrency(deletingLedgerEntry?.amount || 0)}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeletingLedgerEntry(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmDeleteLedgerEntry}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-bold"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              Delete Record
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Action Modals */}
       <ActionModals
