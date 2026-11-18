@@ -94,46 +94,6 @@ export default function LoginPage() {
       setLoading(false);
     } catch (err: unknown) {
       console.error("Login authentication network error:", err);
-
-      // Emergency offline fallback: check locally cached accounts if any
-      let matchedUser: any = null;
-      if (typeof window !== "undefined") {
-        try {
-          const savedUsers = localStorage.getItem("c_users");
-          const savedRoles = localStorage.getItem("c_roles");
-          if (savedUsers) {
-            const parsedUsers = JSON.parse(savedUsers);
-            const parsedRoles = savedRoles ? JSON.parse(savedRoles) : [];
-            const usersList = parsedUsers.map((u: any) => {
-              const r = parsedRoles.find((rl: any) => rl.id === u.roleId);
-              return {
-                username: u.username,
-                password: u.password,
-                fullName: u.fullName,
-                email: u.email || `${u.username}@byten.in`,
-                role: r?.name || "OWNER",
-              };
-            });
-            matchedUser = usersList.find(
-              (u: any) =>
-                (u.username.toLowerCase() === cleanId.toLowerCase() ||
-                  u.email.toLowerCase() === cleanId.toLowerCase()) &&
-                u.password === password
-            );
-          }
-        } catch {}
-      }
-
-      if (matchedUser) {
-        await completeLogin(
-          matchedUser.username,
-          matchedUser.fullName,
-          matchedUser.email,
-          matchedUser.role
-        );
-        return;
-      }
-
       setError("Unable to connect to authentication server. Please check your network connection.");
       setLoading(false);
     }

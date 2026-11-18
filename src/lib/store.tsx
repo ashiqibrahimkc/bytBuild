@@ -217,35 +217,11 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   const [role, setRoleState] = useState<UserRole>("OWNER");
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
 
-  // Company Name - Dynamic & Configurable by Owner (Customer: MK Builders)
-  const [companyName, setCompanyNameState] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("bytbuild_company_name");
-      if (saved && saved !== "byten") return saved;
-    }
-    return "MK Builders";
-  });
+  // Company Name (Customer: MK Builders)
+  const [companyName, setCompanyNameState] = useState<string>("MK Builders");
 
   const setCompanyName = useCallback((name: string) => {
     setCompanyNameState(name);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("bytbuild_company_name", name);
-    }
-  }, []);
-
-  // One-time fresh start storage cleanup & customer migration to "MK Builders"
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const isFresh = localStorage.getItem("bytbuild_fresh_clean_v9");
-      if (!isFresh) {
-        localStorage.setItem("bytbuild_fresh_clean_v9", "true");
-        const saved = localStorage.getItem("bytbuild_company_name");
-        if (!saved || saved === "byten") {
-          localStorage.setItem("bytbuild_company_name", "MK Builders");
-          setCompanyNameState("MK Builders");
-        }
-      }
-    }
   }, []);
 
   // ─── Database-Backed Live Collections ────────────────────────────────────
@@ -1562,16 +1538,6 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     setSiteIncomes([]);
     setCompanyExpenses([]);
     setAuditLogs([]);
-    localStorage.removeItem("c_sites");
-    localStorage.removeItem("c_vendors");
-    localStorage.removeItem("c_workers");
-    localStorage.removeItem("c_purchases");
-    localStorage.removeItem("c_vendor_payments");
-    localStorage.removeItem("c_work_logs");
-    localStorage.removeItem("c_worker_payments");
-    localStorage.removeItem("c_site_incomes");
-    localStorage.removeItem("c_company_expenses");
-    localStorage.removeItem("c_audit_logs");
   };
 
   const exportFullBackupPayload = useCallback(() => {
