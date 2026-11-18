@@ -259,7 +259,7 @@ export async function POST(request: NextRequest) {
             status: payload.status || "ACTIVE",
             estimatedBudget: payload.estimatedBudget || 0,
             openingBalance: payload.openingBalance || 0,
-          },
+          } as any,
         });
         return NextResponse.json({ success: true, item: serializeSite(created) });
       }
@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
             status: payload.status,
             estimatedBudget: payload.estimatedBudget || 0,
             openingBalance: payload.openingBalance || 0,
-          },
+          } as any,
         });
         return NextResponse.json({ success: true, item: serializeSite(updated) });
       }
@@ -302,7 +302,7 @@ export async function POST(request: NextRequest) {
             tradeCategory: payload.tradeCategory || "",
             notes: payload.notes || "",
             openingBalance: payload.openingBalance || 0,
-          },
+          } as any,
         });
         return NextResponse.json({ success: true, item: serializeVendor(created) });
       }
@@ -315,7 +315,7 @@ export async function POST(request: NextRequest) {
             tradeCategory: payload.tradeCategory || "",
             notes: payload.notes || "",
             openingBalance: payload.openingBalance || 0,
-          },
+          } as any,
         });
         return NextResponse.json({ success: true, item: serializeVendor(updated) });
       }
@@ -344,7 +344,7 @@ export async function POST(request: NextRequest) {
             monthlySalary: payload.monthlySalary || 0,
             openingBalance: payload.openingBalance || 0,
             isActive: payload.isActive !== false,
-          },
+          } as any,
         });
         return NextResponse.json({ success: true, item: serializeWorker(created) });
       }
@@ -360,7 +360,7 @@ export async function POST(request: NextRequest) {
             monthlySalary: payload.monthlySalary || 0,
             openingBalance: payload.openingBalance || 0,
             isActive: payload.isActive !== false,
-          },
+          } as any,
         });
         return NextResponse.json({ success: true, item: serializeWorker(updated) });
       }
