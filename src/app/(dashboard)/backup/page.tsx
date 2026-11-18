@@ -6,24 +6,21 @@ import {
   Download,
   Upload,
   CheckCircle2,
-  AlertCircle,
   ShieldAlert,
   Loader2,
-  RefreshCw,
   History,
   Building2,
   Truck,
   Users,
   Receipt,
-  Layers,
-  FileCheck,
   Check,
+  ShieldCheck,
 } from "lucide-react";
 import { useConstruction } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-// ─── CSV String Sanitization & Generation Helpers ─────────────────────────────
+// ─── CSV Sanitization & Generation Helpers ────────────────────────────────────
 function sanitizeCSVField(val: unknown): string {
   if (val === null || val === undefined) return '""';
   const str = String(val).replace(/"/g, '""');
@@ -224,153 +221,11 @@ export default function BackupPage() {
     );
   }
 
-  // ─── CSV Download Actions ──────────────────────────────────────────────────
-  const handleExportSitesCSV = () => {
-    const csv = generateCSV(sites as any[], [
-      { key: "id", label: "Site ID" },
-      { key: "name", label: "Site Name" },
-      { key: "clientName", label: "Client Name" },
-      { key: "location", label: "Location" },
-      { key: "status", label: "Status" },
-      { key: "estimatedBudget", label: "Estimated Budget" },
-      { key: "openingBalance", label: "Opening Balance" },
-      { key: "createdAt", label: "Date Created" },
-    ]);
-    triggerDownload(csv, `sites_${getTodayStr()}.csv`);
-    stampExport("Sites CSV");
-  };
-
-  const handleExportVendorsCSV = () => {
-    const csv = generateCSV(vendors as any[], [
-      { key: "id", label: "Vendor ID" },
-      { key: "name", label: "Vendor Name" },
-      { key: "phone", label: "Phone" },
-      { key: "tradeCategory", label: "Category" },
-      { key: "openingBalance", label: "Opening Balance" },
-      { key: "notes", label: "Notes" },
-    ]);
-    triggerDownload(csv, `vendors_${getTodayStr()}.csv`);
-    stampExport("Vendors CSV");
-  };
-
-  const handleExportWorkersCSV = () => {
-    const csv = generateCSV(workers as any[], [
-      { key: "id", label: "Worker ID" },
-      { key: "name", label: "Worker Name" },
-      { key: "phone", label: "Phone" },
-      { key: "trade", label: "Trade / Role" },
-      { key: "compensationType", label: "Compensation Type" },
-      { key: "defaultDailyWage", label: "Daily Wage" },
-      { key: "monthlySalary", label: "Monthly Salary" },
-      { key: "openingBalance", label: "Opening Balance" },
-      { key: "isActive", label: "Status", accessor: (w: any) => (w.isActive ? "Active" : "Inactive") },
-    ]);
-    triggerDownload(csv, `workers_${getTodayStr()}.csv`);
-    stampExport("Workers CSV");
-  };
-
-  const handleExportPurchasesCSV = () => {
-    const csv = generateCSV(vendorPurchases as any[], [
-      { key: "id", label: "Bill ID" },
-      { key: "purchaseDate", label: "Date" },
-      {
-        key: "vendorId",
-        label: "Vendor Name",
-        accessor: (p: any) => vendors.find((v) => v.id === p.vendorId)?.name || p.vendorId,
-      },
-      {
-        key: "siteId",
-        label: "Site Name",
-        accessor: (p: any) => sites.find((s) => s.id === p.siteId)?.name || p.siteId,
-      },
-      { key: "voucherNo", label: "Voucher / Bill No" },
-      { key: "amount", label: "Amount" },
-      { key: "notes", label: "Notes" },
-    ]);
-    triggerDownload(csv, `material_bills_${getTodayStr()}.csv`);
-    stampExport("Material Bills CSV");
-  };
-
-  const handleExportWorkLogsCSV = () => {
-    const csv = generateCSV(workerWorkLogs as any[], [
-      { key: "id", label: "Log ID" },
-      { key: "workDate", label: "Work Date" },
-      {
-        key: "workerId",
-        label: "Worker Name",
-        accessor: (l: any) => workers.find((w) => w.id === l.workerId)?.name || l.workerId,
-      },
-      {
-        key: "siteId",
-        label: "Site Name",
-        accessor: (l: any) => sites.find((s) => s.id === l.siteId)?.name || l.siteId,
-      },
-      { key: "wageAmount", label: "Wage Amount" },
-      { key: "notes", label: "Notes" },
-    ]);
-    triggerDownload(csv, `daily_worker_wages_${getTodayStr()}.csv`);
-    stampExport("Daily Wages CSV");
-  };
-
-  const handleExportExpensesCSV = () => {
-    const csv = generateCSV(companyExpenses as any[], [
-      { key: "id", label: "Expense ID" },
-      { key: "expenseDate", label: "Date" },
-      { key: "category", label: "Expense Category" },
-      {
-        key: "siteId",
-        label: "Site Name",
-        accessor: (e: any) => (e.siteId ? sites.find((s) => s.id === e.siteId)?.name || e.siteId : "Head Office"),
-      },
-      { key: "amount", label: "Amount" },
-      { key: "paymentMode", label: "Payment Mode" },
-      { key: "voucherNo", label: "Voucher No" },
-      { key: "notes", label: "Notes" },
-    ]);
-    triggerDownload(csv, `company_expenses_${getTodayStr()}.csv`);
-    stampExport("Expenses CSV");
-  };
-
-  const handleExportInflowsCSV = () => {
-    const csv = generateCSV(siteIncomes as any[], [
-      { key: "id", label: "Inflow ID" },
-      { key: "incomeDate", label: "Date" },
-      {
-        key: "siteId",
-        label: "Site Name",
-        accessor: (i: any) => sites.find((s) => s.id === i.siteId)?.name || i.siteId,
-      },
-      { key: "receivedFrom", label: "Received From" },
-      { key: "amount", label: "Amount" },
-      { key: "paymentMode", label: "Payment Mode" },
-      { key: "referenceNo", label: "Reference / Cheque No" },
-      { key: "notes", label: "Notes" },
-    ]);
-    triggerDownload(csv, `client_inflows_${getTodayStr()}.csv`);
-    stampExport("Client Inflows CSV");
-  };
-
-  const handleExportSalarySlipsCSV = () => {
-    const csv = generateCSV(salarySlips as any[], [
-      { key: "slipNumber", label: "Slip Number" },
-      { key: "monthLabel", label: "Pay Period" },
-      { key: "workerName", label: "Worker Name" },
-      { key: "workerTrade", label: "Role" },
-      { key: "baseSalary", label: "Base Salary" },
-      { key: "advanceDeductions", label: "Advance Deducted" },
-      { key: "netPayableAmount", label: "Net Paid Amount" },
-      { key: "paymentDate", label: "Payment Date" },
-      { key: "paymentMode", label: "Payment Mode" },
-      { key: "voucherNo", label: "Voucher No" },
-    ]);
-    triggerDownload(csv, `salary_slips_${getTodayStr()}.csv`);
-    stampExport("Salary Slips CSV");
-  };
-
-  // ─── Master All-in-One CSV Export ──────────────────────────────────────────
-  const handleExportMasterLedgerCSV = () => {
+  // ─── Download All Data (Master CSV) ────────────────────────────────────────
+  const handleExportAllDataCSV = () => {
     const rows: Record<string, unknown>[] = [];
 
+    // 1. Client Milestone Inflows
     siteIncomes.forEach((i) => {
       const site = sites.find((s) => s.id === i.siteId);
       rows.push({
@@ -378,7 +233,7 @@ export default function BackupPage() {
         type: "Client Inflow",
         siteName: site?.name || "General",
         party: i.receivedFrom || site?.clientName || "Client",
-        category: "Client Milestone Advance",
+        category: "Client Milestone Payment",
         reference: i.referenceNo || "-",
         paymentMode: i.paymentMode,
         inflow: i.amount,
@@ -387,6 +242,7 @@ export default function BackupPage() {
       });
     });
 
+    // 2. Material Purchases
     vendorPurchases.forEach((p) => {
       const vendor = vendors.find((v) => v.id === p.vendorId);
       const site = sites.find((s) => s.id === p.siteId);
@@ -404,6 +260,7 @@ export default function BackupPage() {
       });
     });
 
+    // 3. Daily Worker Wages
     workerWorkLogs.forEach((w) => {
       const worker = workers.find((wk) => wk.id === w.workerId);
       const site = sites.find((s) => s.id === w.siteId);
@@ -421,6 +278,7 @@ export default function BackupPage() {
       });
     });
 
+    // 4. Company & Overhead Expenses
     companyExpenses.forEach((e) => {
       const site = e.siteId ? sites.find((s) => s.id === e.siteId) : null;
       rows.push({
@@ -437,6 +295,7 @@ export default function BackupPage() {
       });
     });
 
+    // 5. Vendor Cash Payments
     vendorPayments.forEach((vp) => {
       const vendor = vendors.find((v) => v.id === vp.vendorId);
       rows.push({
@@ -453,11 +312,12 @@ export default function BackupPage() {
       });
     });
 
+    // 6. Worker Wage Payments
     workerPayments.forEach((wp) => {
       const worker = workers.find((w) => w.id === wp.workerId);
       rows.push({
         date: wp.paymentDate,
-        type: "Worker Payment",
+        type: "Worker Wage Payment",
         siteName: "-",
         party: worker?.name || "Worker",
         category: worker?.trade || "Wages",
@@ -469,36 +329,40 @@ export default function BackupPage() {
       });
     });
 
+    // 7. Monthly Salary Slips
+    salarySlips.forEach((s) => {
+      rows.push({
+        date: s.paymentDate,
+        type: "Salary Slip",
+        siteName: "-",
+        party: s.workerName,
+        category: s.workerTrade,
+        reference: s.slipNumber,
+        paymentMode: s.paymentMode,
+        inflow: 0,
+        outflow: s.netPayableAmount,
+        notes: `Month: ${s.monthLabel} | Base: ${s.baseSalary} | Advance: ${s.advanceDeductions} | ${s.notes || ""}`,
+      });
+    });
+
+    // Sort chronologically (latest first)
     rows.sort((a, b) => new Date(b.date as string).getTime() - new Date(a.date as string).getTime());
 
     const csv = generateCSV(rows, [
       { key: "date", label: "Date" },
       { key: "type", label: "Transaction Type" },
       { key: "siteName", label: "Site Name" },
-      { key: "party", label: "Party / Worker / Vendor" },
-      { key: "category", label: "Category" },
+      { key: "party", label: "Party / Worker / Vendor / Client" },
+      { key: "category", label: "Category / Trade" },
       { key: "reference", label: "Voucher / Reference #" },
       { key: "paymentMode", label: "Payment Mode" },
-      { key: "inflow", label: "Inflow (INR)" },
-      { key: "outflow", label: "Outflow (INR)" },
-      { key: "notes", label: "Notes" },
+      { key: "inflow", label: "Inflow Amount (INR)" },
+      { key: "outflow", label: "Outflow Amount (INR)" },
+      { key: "notes", label: "Notes & Descriptions" },
     ]);
 
-    triggerDownload(csv, `all_data_master_ledger_${getTodayStr()}.csv`);
+    triggerDownload(csv, `all_data_export_${getTodayStr()}.csv`);
     stampExport("All Data (Master CSV)");
-  };
-
-  const handleExportAllIndividualCSVs = () => {
-    handleExportMasterLedgerCSV();
-    setTimeout(() => handleExportSitesCSV(), 250);
-    setTimeout(() => handleExportVendorsCSV(), 500);
-    setTimeout(() => handleExportWorkersCSV(), 750);
-    setTimeout(() => handleExportPurchasesCSV(), 1000);
-    setTimeout(() => handleExportWorkLogsCSV(), 1250);
-    setTimeout(() => handleExportExpensesCSV(), 1500);
-    setTimeout(() => handleExportInflowsCSV(), 1750);
-    setTimeout(() => handleExportSalarySlipsCSV(), 2000);
-    stampExport("All Individual CSV Tables");
   };
 
   // ─── CSV Upload / Import Handler ───────────────────────────────────────────
@@ -537,7 +401,7 @@ export default function BackupPage() {
         setParsedHeaders(headers);
         setParsedRows(rows);
 
-        // Auto-detect target table by inspect headers
+        // Auto-detect target table by inspecting headers
         const headerLower = headers.map((h) => h.toLowerCase()).join(" ");
         let detected: ImportTargetTable = "SITES";
 
@@ -585,7 +449,6 @@ export default function BackupPage() {
 
     try {
       for (const row of parsedRows) {
-        // Find field values case-insensitively
         const getVal = (possibleNames: string[]): string => {
           for (const name of possibleNames) {
             for (const key of Object.keys(row)) {
@@ -722,7 +585,6 @@ export default function BackupPage() {
         message: `Successfully imported ${importedCount} records into ${target} from CSV!`,
       });
 
-      // Clear preview
       setParsedRows([]);
       setParsedHeaders([]);
       setCsvFileName("");
@@ -743,7 +605,8 @@ export default function BackupPage() {
     companyExpenses.length +
     siteIncomes.length +
     vendorPayments.length +
-    workerPayments.length;
+    workerPayments.length +
+    salarySlips.length;
 
   return (
     <div className="space-y-5">
@@ -763,7 +626,7 @@ export default function BackupPage() {
               </Badge>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Export all construction records to Excel-ready CSV files, or upload CSV files to import data directly into your database.
+              Download your complete ERP database in a single master spreadsheet, or upload CSV files to import data.
             </p>
           </div>
         </div>
@@ -804,8 +667,8 @@ export default function BackupPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* ── Left Column: CSV Downloads (7 cols) ─────────────────────────── */}
-        <div className="lg:col-span-7 space-y-4">
+        {/* ── Left Column: Download All Data Setup (6 cols) ───────────────── */}
+        <div className="lg:col-span-6 space-y-4">
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2.5">
@@ -813,9 +676,9 @@ export default function BackupPage() {
                   <Download className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">Download Data (CSV)</h2>
+                  <h2 className="text-base font-bold text-slate-900">Download All Data</h2>
                   <p className="text-xs text-slate-500">
-                    Download complete ERP records formatted for Microsoft Excel &amp; Google Sheets.
+                    Export all construction database transactions in one complete spreadsheet.
                   </p>
                 </div>
               </div>
@@ -824,165 +687,62 @@ export default function BackupPage() {
               </span>
             </div>
 
-            {/* Main Download Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-2.5">
+            {/* Primary Download All Data Button */}
+            <div className="pt-1">
               <Button
-                onClick={handleExportMasterLedgerCSV}
-                className="w-full sm:w-auto bg-emerald-700 hover:bg-emerald-800 text-white font-bold h-11 px-5 text-xs shadow-xs cursor-pointer flex-1"
+                onClick={handleExportAllDataCSV}
+                className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold h-12 px-6 text-sm shadow-md shadow-emerald-700/20 cursor-pointer"
               >
-                <Download className="h-4 w-4 mr-2" />
-                Download All Data (Master CSV)
-              </Button>
-              <Button
-                onClick={handleExportAllIndividualCSVs}
-                variant="outline"
-                className="w-full sm:w-auto border-emerald-300 text-emerald-800 hover:bg-emerald-50 font-semibold h-11 px-4 text-xs cursor-pointer"
-              >
-                <Layers className="h-4 w-4 mr-2" />
-                Download All CSV Tables
+                <Download className="h-5 w-5 mr-2" />
+                Download All Data (CSV)
               </Button>
             </div>
 
-            {/* Individual Table CSV Downloads */}
-            <div className="pt-2">
-              <span className="text-xs font-bold text-slate-700 block mb-2.5">
-                Download Specific Table CSV:
+            {/* Included Data Breakdown List */}
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2.5 text-xs text-slate-600">
+              <span className="font-bold text-slate-900 block border-b border-slate-200/80 pb-1.5">
+                Included in Your All-Data CSV Export:
               </span>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={handleExportSitesCSV}
-                  className="p-2.5 text-left rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors flex items-center justify-between cursor-pointer group"
-                >
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-slate-800 group-hover:text-emerald-800 block">
-                      Sites &amp; Projects
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {sites.length} rows
-                    </span>
-                  </div>
-                  <Download className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-600" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleExportVendorsCSV}
-                  className="p-2.5 text-left rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors flex items-center justify-between cursor-pointer group"
-                >
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-slate-800 group-hover:text-emerald-800 block">
-                      Material Vendors
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {vendors.length} rows
-                    </span>
-                  </div>
-                  <Download className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-600" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleExportWorkersCSV}
-                  className="p-2.5 text-left rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors flex items-center justify-between cursor-pointer group"
-                >
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-slate-800 group-hover:text-emerald-800 block">
-                      Workers Roster
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {workers.length} rows
-                    </span>
-                  </div>
-                  <Download className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-600" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleExportPurchasesCSV}
-                  className="p-2.5 text-left rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors flex items-center justify-between cursor-pointer group"
-                >
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-slate-800 group-hover:text-emerald-800 block">
-                      Material Bills
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {vendorPurchases.length} rows
-                    </span>
-                  </div>
-                  <Download className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-600" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleExportWorkLogsCSV}
-                  className="p-2.5 text-left rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors flex items-center justify-between cursor-pointer group"
-                >
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-slate-800 group-hover:text-emerald-800 block">
-                      Daily Wage Logs
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {workerWorkLogs.length} rows
-                    </span>
-                  </div>
-                  <Download className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-600" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleExportExpensesCSV}
-                  className="p-2.5 text-left rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors flex items-center justify-between cursor-pointer group"
-                >
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-slate-800 group-hover:text-emerald-800 block">
-                      Company Expenses
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {companyExpenses.length} rows
-                    </span>
-                  </div>
-                  <Download className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-600" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleExportInflowsCSV}
-                  className="p-2.5 text-left rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors flex items-center justify-between cursor-pointer group"
-                >
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-slate-800 group-hover:text-emerald-800 block">
-                      Client Inflows
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {siteIncomes.length} rows
-                    </span>
-                  </div>
-                  <Download className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-600" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleExportSalarySlipsCSV}
-                  className="p-2.5 text-left rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors flex items-center justify-between cursor-pointer group"
-                >
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-slate-800 group-hover:text-emerald-800 block">
-                      Salary Slips
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {salarySlips.length} rows
-                    </span>
-                  </div>
-                  <Download className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-600" />
-                </button>
+              <ul className="space-y-1.5 text-[11px] text-slate-600 leading-relaxed">
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span><strong>{sites.length}</strong> Sites &amp; Construction Projects</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span><strong>{siteIncomes.length}</strong> Client Milestone Advances &amp; Inflows</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span><strong>{vendorPurchases.length}</strong> Material Purchases &amp; Supplier Bills</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span><strong>{workerWorkLogs.length}</strong> Daily Worker Wages &amp; Labor Logs</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span><strong>{companyExpenses.length}</strong> Company Expenses (Room rent, petrol, mess, permits)</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span><strong>{vendorPayments.length + workerPayments.length}</strong> Vendor &amp; Worker Cash Settlements</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span><strong>{salarySlips.length}</strong> Generated Monthly Salary Slips</span>
+                </li>
+              </ul>
+              <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px] font-mono text-slate-500">
+                <span>Total Transactions:</span>
+                <span className="font-bold text-slate-900">{totalTransactions} records</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── Right Column: CSV Upload / Import (5 cols) ──────────────────── */}
-        <div className="lg:col-span-5 space-y-4">
+        {/* ── Right Column: Upload CSV Setup (6 cols) ─────────────────────── */}
+        <div className="lg:col-span-6 space-y-4">
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
             <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
               <div className="p-2 rounded-lg bg-blue-50 text-blue-700">
@@ -1004,7 +764,7 @@ export default function BackupPage() {
               <select
                 value={selectedTarget}
                 onChange={(e) => setSelectedTarget(e.target.value as ImportTargetTable)}
-                className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium text-slate-800 focus:border-emerald-500 focus:outline-hidden"
+                className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium text-slate-800 focus:border-emerald-500 focus:outline-hidden"
               >
                 <option value="AUTO_DETECT">⚡ Auto-Detect Table from Headers</option>
                 <option value="SITES">Sites &amp; Construction Projects</option>
@@ -1027,7 +787,7 @@ export default function BackupPage() {
                 type="file"
                 accept=".csv"
                 onChange={handleCSVFileSelect}
-                className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 cursor-pointer border border-dashed border-slate-300 rounded-xl p-3"
+                className="block w-full text-xs text-slate-500 file:mr-3 file:py-2.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 cursor-pointer border border-dashed border-slate-300 rounded-xl p-3"
               />
             </div>
 
@@ -1071,7 +831,7 @@ export default function BackupPage() {
                   <Button
                     onClick={handleConfirmCSVUpload}
                     disabled={uploading}
-                    className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold h-9 text-xs shadow-xs cursor-pointer"
+                    className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold h-10 text-xs shadow-xs cursor-pointer"
                   >
                     {uploading ? (
                       <>
@@ -1094,7 +854,7 @@ export default function BackupPage() {
                       setCsvFileName("");
                       if (fileInputRef.current) fileInputRef.current.value = "";
                     }}
-                    className="h-9 px-3 text-xs"
+                    className="h-10 px-3 text-xs"
                   >
                     Cancel
                   </Button>
