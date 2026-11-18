@@ -19,6 +19,7 @@ import {
 import { useConstruction } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BackupSkeleton } from "@/components/ui/page-skeletons";
 
 // ─── CSV Sanitization & Generation Helpers ────────────────────────────────────
 function sanitizeCSVField(val: unknown): string {
@@ -137,6 +138,7 @@ type ImportTargetTable =
 export default function BackupPage() {
   const {
     role,
+    isDbLoading,
     sites,
     vendors,
     workers,
@@ -179,6 +181,10 @@ export default function BackupPage() {
       if (savedTime) setLastExportTime(savedTime);
     } catch {}
   }, []);
+
+  if (isDbLoading) {
+    return <BackupSkeleton />;
+  }
 
   const hasAccess =
     role.toUpperCase() === "OWNER" ||

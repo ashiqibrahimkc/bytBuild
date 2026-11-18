@@ -33,11 +33,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ActionModals } from "@/components/modals/ActionModals";
 import { Pagination } from "@/components/ui/pagination";
+import { CashFlowSkeleton } from "@/components/ui/page-skeletons";
 
 export default function CashFlowPage() {
   const {
     companyName,
     role,
+    isDbLoading,
     sites,
     companyExpenses,
     vendorPayments,
@@ -168,6 +170,10 @@ export default function CashFlowPage() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
+
+  if (isDbLoading) {
+    return <CashFlowSkeleton />;
+  }
 
   return (
     <div className="space-y-6">

@@ -35,10 +35,12 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/dialog";
 import { ActionModals } from "@/components/modals/ActionModals";
 import { Pagination } from "@/components/ui/pagination";
+import { WorkersSkeleton } from "@/components/ui/page-skeletons";
 
 export default function WorkersPage() {
   const {
     companyName,
+    isDbLoading,
     workers,
     sites,
     workerWorkLogs,
@@ -378,6 +380,10 @@ export default function WorkersPage() {
       document.title = originalTitle;
     }, 1000);
   };
+
+  if (isDbLoading) {
+    return <WorkersSkeleton />;
+  }
 
   return (
     <div className="space-y-6">

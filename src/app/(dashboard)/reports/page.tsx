@@ -24,6 +24,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
+import { ReportsSkeleton } from "@/components/ui/page-skeletons";
 
 type ReportType =
   | "SITE_STATEMENT"
@@ -35,6 +36,7 @@ type ReportType =
 export default function ReportsPage() {
   const {
     role,
+    isDbLoading,
     companyName,
     sites,
     vendors,
@@ -486,6 +488,10 @@ export default function ReportsPage() {
   }, [activeDataset, currentPage, pageSize]);
 
   const currentSiteObj = sites.find((s) => s.id === selectedSiteId);
+
+  if (isDbLoading) {
+    return <ReportsSkeleton />;
+  }
 
   return (
     <div className="space-y-4">

@@ -35,11 +35,13 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/dialog";
 import { ActionModals } from "@/components/modals/ActionModals";
 import { Pagination } from "@/components/ui/pagination";
+import { SitesSkeleton } from "@/components/ui/page-skeletons";
 
 export default function SitesPage() {
   const {
     companyName,
     role,
+    isDbLoading,
     sites,
     vendors,
     workers,
@@ -650,6 +652,10 @@ export default function SitesPage() {
     if (action === "INCOME") setOpenIncome(true);
     if (action === "EXPENSE") setOpenExpense(true);
   };
+
+  if (isDbLoading) {
+    return <SitesSkeleton />;
+  }
 
   return (
     <div className="space-y-6">

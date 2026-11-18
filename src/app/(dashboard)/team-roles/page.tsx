@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/dialog";
+import { TeamRolesSkeleton } from "@/components/ui/page-skeletons";
 
 const ALL_PAGES: { id: PagePermission; label: string; desc: string; icon: React.ElementType }[] = [
   { id: "dashboard", label: "Dashboard", desc: "Overview cards & activity", icon: LayoutDashboard },
@@ -51,6 +52,7 @@ const ALL_PAGES: { id: PagePermission; label: string; desc: string; icon: React.
 export default function TeamRolesPage() {
   const {
     role,
+    isDbLoading,
     canAccessPage,
     roles,
     users,
@@ -92,6 +94,10 @@ export default function TeamRolesPage() {
   const [newRoleId, setNewRoleId] = useState(roles[1]?.id || roles[0]?.id || "");
   const [showPassword, setShowPassword] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
+
+  if (isDbLoading) {
+    return <TeamRolesSkeleton />;
+  }
 
   const hasAccess = canAccessPage("team-roles");
 

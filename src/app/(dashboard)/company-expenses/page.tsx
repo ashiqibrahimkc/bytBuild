@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
 import { ExpenseCategory, PaymentMode } from "@/lib/types";
+import { CompanyExpensesSkeleton } from "@/components/ui/page-skeletons";
 
 const CATEGORY_MAP: Record<
   string,
@@ -109,7 +110,7 @@ const CATEGORY_MAP: Record<
 };
 
 export default function CompanyExpensesPage() {
-  const { companyName, sites, workers, companyExpenses, recordCompanyExpense } = useConstruction();
+  const { companyName, isDbLoading, sites, workers, companyExpenses, recordCompanyExpense } = useConstruction();
 
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState("");
@@ -291,6 +292,10 @@ export default function CompanyExpensesPage() {
     const start = (currentPage - 1) * pageSize;
     return sorted.slice(start, start + pageSize);
   }, [filteredExpenses, currentPage, pageSize]);
+
+  if (isDbLoading) {
+    return <CompanyExpensesSkeleton />;
+  }
 
   return (
     <div className="space-y-6">

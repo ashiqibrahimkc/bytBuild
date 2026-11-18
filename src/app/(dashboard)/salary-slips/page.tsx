@@ -44,6 +44,7 @@ import {
 import { Modal } from "@/components/ui/dialog";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { SalarySlip, PaymentMode, Worker } from "@/lib/types";
+import { SalarySlipsSkeleton } from "@/components/ui/page-skeletons";
 
 // Helper: Convert number to Indian Rupee Words
 function numberToWords(num: number): string {
@@ -134,6 +135,7 @@ function getMonthOptions() {
 function SalarySlipsContent() {
   const {
     role,
+    isDbLoading,
     companyName,
     workers,
     companyExpenses,
@@ -331,6 +333,10 @@ function SalarySlipsContent() {
         </div>
       </div>
     );
+  }
+
+  if (isDbLoading) {
+    return <SalarySlipsSkeleton />;
   }
 
   return (

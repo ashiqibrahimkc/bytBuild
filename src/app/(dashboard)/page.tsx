@@ -36,6 +36,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ActionModals } from "@/components/modals/ActionModals";
+import { DashboardSkeleton } from "@/components/ui/page-skeletons";
 
 export default function DashboardPage() {
   const [greeting, setGreeting] = useState("Good day");
@@ -59,6 +60,7 @@ export default function DashboardPage() {
 
   const {
     role,
+    isDbLoading,
     companyName,
     setCompanyName,
     sites,
@@ -84,6 +86,10 @@ export default function DashboardPage() {
   const [openIncome, setOpenIncome] = useState(false);
   const [openExpense, setOpenExpense] = useState(false);
   const [selectedSiteId, setSelectedSiteId] = useState<string | undefined>(undefined);
+
+  if (isDbLoading) {
+    return <DashboardSkeleton />;
+  }
 
   const handleSiteAction = (
     siteId: string,

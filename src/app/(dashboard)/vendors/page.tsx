@@ -33,10 +33,12 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/dialog";
 import { ActionModals } from "@/components/modals/ActionModals";
 import { Pagination } from "@/components/ui/pagination";
+import { VendorsSkeleton } from "@/components/ui/page-skeletons";
 
 export default function VendorsPage() {
   const {
     companyName,
+    isDbLoading,
     vendors,
     sites,
     vendorPurchases,
@@ -340,6 +342,10 @@ export default function VendorsPage() {
         (b.site.location && b.site.location.toLowerCase().includes(q))
     );
   }, [sites, filteredPurchases, siteBreakdownSearch]);
+
+  if (isDbLoading) {
+    return <VendorsSkeleton />;
+  }
 
   return (
     <div className="space-y-6">

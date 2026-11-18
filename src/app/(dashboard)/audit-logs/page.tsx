@@ -18,15 +18,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/ui/pagination";
+import { AuditLogsSkeleton } from "@/components/ui/page-skeletons";
 
 export default function AuditLogsPage() {
-  const { auditLogs, canAccessPage, role } = useConstruction();
+  const { auditLogs, canAccessPage, role, isDbLoading } = useConstruction();
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState("ALL");
   const [roleFilter, setRoleFilter] = useState("ALL");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  if (isDbLoading) {
+    return <AuditLogsSkeleton />;
+  }
 
   const hasAccess = canAccessPage("audit-logs");
 
