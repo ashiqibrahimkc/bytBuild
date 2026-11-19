@@ -27,7 +27,7 @@ export default function AuditLogsPage() {
   const [roleFilter, setRoleFilter] = useState("ALL");
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
 
   if (isDbLoading) {
     return <AuditLogsSkeleton />;
@@ -299,7 +299,10 @@ export default function AuditLogsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredLogs
-                    .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                    .slice(
+                      (Math.min(Math.max(1, currentPage), Math.max(1, Math.ceil(filteredLogs.length / (pageSize || 5)))) - 1) * pageSize,
+                      Math.min(Math.max(1, currentPage), Math.max(1, Math.ceil(filteredLogs.length / (pageSize || 5)))) * pageSize
+                    )
                     .map((log) => (
                       <tr key={log.id} className="hover:bg-amber-50/30 transition-colors">
                         <td className="py-2.5 px-3.5 whitespace-nowrap font-mono text-slate-500 text-[11px]">

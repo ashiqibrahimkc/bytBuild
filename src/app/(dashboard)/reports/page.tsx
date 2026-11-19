@@ -64,7 +64,7 @@ export default function ReportsPage() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
   const [generatedDate, setGeneratedDate] = useState("");
 
   useEffect(() => {
@@ -483,9 +483,20 @@ export default function ReportsPage() {
 
   // Paginated slice
   const paginatedItems = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return activeDataset.slice(start, start + pageSize);
+    const size = Math.max(1, Number(pageSize) || 5);
+    const totalPages = Math.max(1, Math.ceil(activeDataset.length / size));
+    const safePage = Math.min(Math.max(1, currentPage), totalPages);
+    const start = (safePage - 1) * size;
+    return activeDataset.slice(start, start + size);
   }, [activeDataset, currentPage, pageSize]);
+
+  useEffect(() => {
+    const size = Math.max(1, Number(pageSize) || 5);
+    const totalPages = Math.max(1, Math.ceil(activeDataset.length / size));
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [activeDataset.length, currentPage, pageSize]);
 
   const currentSiteObj = sites.find((s) => s.id === selectedSiteId);
 

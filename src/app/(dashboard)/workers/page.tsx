@@ -136,7 +136,7 @@ export default function WorkersPage() {
 
   // Pagination for Workers roster
   const [rosterPage, setRosterPage] = useState(1);
-  const [rosterPageSize, setRosterPageSize] = useState(15);
+  const [rosterPageSize, setRosterPageSize] = useState(5);
   const [generatedDate, setGeneratedDate] = useState("");
 
   useEffect(() => {
@@ -253,9 +253,20 @@ export default function WorkersPage() {
 
   // Paginated Workers
   const paginatedWorkers = useMemo(() => {
-    const start = (rosterPage - 1) * rosterPageSize;
-    return filteredWorkers.slice(start, start + rosterPageSize);
+    const size = Math.max(1, Number(rosterPageSize) || 5);
+    const totalPages = Math.max(1, Math.ceil(filteredWorkers.length / size));
+    const safePage = Math.min(Math.max(1, rosterPage), totalPages);
+    const start = (safePage - 1) * size;
+    return filteredWorkers.slice(start, start + size);
   }, [filteredWorkers, rosterPage, rosterPageSize]);
+
+  useEffect(() => {
+    const size = Math.max(1, Number(rosterPageSize) || 5);
+    const totalPages = Math.max(1, Math.ceil(filteredWorkers.length / size));
+    if (rosterPage > totalPages) {
+      setRosterPage(totalPages);
+    }
+  }, [filteredWorkers.length, rosterPage, rosterPageSize]);
 
   // Selected Worker Detail
   const currentWorker = workers.find((w) => w.id === selectedWorkerId);

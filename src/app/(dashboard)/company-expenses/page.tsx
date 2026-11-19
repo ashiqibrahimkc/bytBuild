@@ -121,7 +121,7 @@ export default function CompanyExpensesPage() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
   const [generatedDate, setGeneratedDate] = useState("");
 
   useEffect(() => {
@@ -286,12 +286,23 @@ export default function CompanyExpensesPage() {
 
   // Paginated records
   const paginatedExpenses = useMemo(() => {
+    const size = Math.max(1, Number(pageSize) || 5);
+    const totalPages = Math.max(1, Math.ceil(filteredExpenses.length / size));
+    const safePage = Math.min(Math.max(1, currentPage), totalPages);
     const sorted = [...filteredExpenses].sort(
       (a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime()
     );
-    const start = (currentPage - 1) * pageSize;
-    return sorted.slice(start, start + pageSize);
+    const start = (safePage - 1) * size;
+    return sorted.slice(start, start + size);
   }, [filteredExpenses, currentPage, pageSize]);
+
+  useEffect(() => {
+    const size = Math.max(1, Number(pageSize) || 5);
+    const totalPages = Math.max(1, Math.ceil(filteredExpenses.length / size));
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [filteredExpenses.length, currentPage, pageSize]);
 
   if (isDbLoading) {
     return <CompanyExpensesSkeleton />;

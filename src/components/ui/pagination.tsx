@@ -16,14 +16,21 @@ interface PaginationProps {
 export function Pagination({
   currentPage,
   totalItems,
-  pageSize,
+  pageSize: rawPageSize,
   onPageChange,
   onPageSizeChange,
   pageSizeOptions = [5, 10, 20, 50],
 }: PaginationProps) {
+  const pageSize = Math.max(1, Number(rawPageSize) || 5);
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(totalItems, currentPage * pageSize);
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startItem = totalItems === 0 ? 0 : (safeCurrentPage - 1) * pageSize + 1;
+  const endItem = Math.min(totalItems, safeCurrentPage * pageSize);
+
+  // Guarantee pageSize is always included in the select options
+  const options = Array.from(new Set([pageSize, ...pageSizeOptions])).sort(
+    (a, b) => a - b
+  );
 
   // Generate page numbers with windowing
   const getPageNumbers = () => {
@@ -32,11 +39,11 @@ export function Pagination({
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       pages.push(1);
-      if (currentPage > 3) pages.push("...");
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
+      if (safeCurrentPage > 3) pages.push("...");
+      const start = Math.max(2, safeCurrentPage - 1);
+      const end = Math.min(totalPages - 1, safeCurrentPage + 1);
       for (let i = start; i <= end; i++) pages.push(i);
-      if (currentPage < totalPages - 2) pages.push("...");
+      if (safeCurrentPage < totalPages - 2) pages.push("...");
       pages.push(totalPages);
     }
     return pages;
@@ -60,12 +67,15 @@ export function Pagination({
             <select
               value={pageSize}
               onChange={(e) => {
-                onPageSizeChange(Number(e.target.value));
+                const newSize = Number(e.target.value);
+                if (onPageSizeChange) {
+                  onPageSizeChange(newSize);
+                }
                 onPageChange(1);
               }}
               className="rounded border border-slate-200 bg-white px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
             >
-              {pageSizeOptions.map((opt) => (
+              {options.map((opt) => (
                 <option key={opt} value={opt}>
                   {opt}
                 </option>
@@ -81,7 +91,7 @@ export function Pagination({
           variant="outline"
           size="sm"
           onClick={() => onPageChange(1)}
-          disabled={currentPage === 1}
+          disabled={safeCurrentPage === 1}
           className="h-7 w-7 p-0"
           title="First Page"
         >
@@ -90,8 +100,8 @@ export function Pagination({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          onClick={() => onPageChange(safeCurrentPage - 1)}
+          disabled={safeCurrentPage === 1}
           className="h-7 w-7 p-0"
           title="Previous Page"
         >
@@ -105,7 +115,7 @@ export function Pagination({
                 key={idx}
                 onClick={() => onPageChange(p)}
                 className={`h-7 w-7 rounded text-xs font-bold transition-all cursor-pointer ${
-                  currentPage === p
+                  safeCurrentPage === p
                     ? "bg-amber-600 text-white shadow-xs"
                     : "text-slate-600 hover:bg-slate-100"
                 }`}
@@ -123,8 +133,8 @@ export function Pagination({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          onClick={() => onPageChange(safeCurrentPage + 1)}
+          disabled={safeCurrentPage === totalPages}
           className="h-7 w-7 p-0"
           title="Next Page"
         >
@@ -134,7 +144,7 @@ export function Pagination({
           variant="outline"
           size="sm"
           onClick={() => onPageChange(totalPages)}
-          disabled={currentPage === totalPages}
+          disabled={safeCurrentPage === totalPages}
           className="h-7 w-7 p-0"
           title="Last Page"
         >

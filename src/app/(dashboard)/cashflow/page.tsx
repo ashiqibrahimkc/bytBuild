@@ -53,7 +53,7 @@ export default function CashFlowPage() {
   const [openExpense, setOpenExpense] = useState(false);
   const [openIncome, setOpenIncome] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
   const [datePreset, setDatePreset] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -166,9 +166,13 @@ export default function CashFlowPage() {
     return true;
   });
 
+  const safeMovementsPage = Math.min(
+    Math.max(1, currentPage),
+    Math.max(1, Math.ceil(filteredMovements.length / (pageSize || 5)))
+  );
   const paginatedMovements = filteredMovements.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
+    (safeMovementsPage - 1) * pageSize,
+    safeMovementsPage * pageSize
   );
 
   if (isDbLoading) {

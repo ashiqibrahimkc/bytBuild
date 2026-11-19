@@ -147,7 +147,7 @@ export default function SitesPage() {
 
   // Roster Pagination
   const [rosterPage, setRosterPage] = useState(1);
-  const [rosterPageSize, setRosterPageSize] = useState(9);
+  const [rosterPageSize, setRosterPageSize] = useState(5);
 
   // New site form state
   const [name, setName] = useState("");
@@ -256,9 +256,20 @@ export default function SitesPage() {
 
   // Paginated Sites
   const paginatedSites = useMemo(() => {
-    const start = (rosterPage - 1) * rosterPageSize;
-    return filteredSites.slice(start, start + rosterPageSize);
+    const size = Math.max(1, Number(rosterPageSize) || 5);
+    const totalPages = Math.max(1, Math.ceil(filteredSites.length / size));
+    const safePage = Math.min(Math.max(1, rosterPage), totalPages);
+    const start = (safePage - 1) * size;
+    return filteredSites.slice(start, start + size);
   }, [filteredSites, rosterPage, rosterPageSize]);
+
+  useEffect(() => {
+    const size = Math.max(1, Number(rosterPageSize) || 5);
+    const totalPages = Math.max(1, Math.ceil(filteredSites.length / size));
+    if (rosterPage > totalPages) {
+      setRosterPage(totalPages);
+    }
+  }, [filteredSites.length, rosterPage, rosterPageSize]);
 
   // Selected Site Detail
   const currentSite = sites.find((s) => s.id === selectedSiteId);

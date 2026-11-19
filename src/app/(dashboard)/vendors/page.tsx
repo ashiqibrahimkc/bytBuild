@@ -136,7 +136,7 @@ export default function VendorsPage() {
 
   // Roster Pagination
   const [rosterPage, setRosterPage] = useState(1);
-  const [rosterPageSize, setRosterPageSize] = useState(15);
+  const [rosterPageSize, setRosterPageSize] = useState(5);
 
   // Modals for Actions
   const [openPurchase, setOpenPurchase] = useState(false);
@@ -233,9 +233,20 @@ export default function VendorsPage() {
 
   // Paginated Roster
   const paginatedVendors = useMemo(() => {
-    const start = (rosterPage - 1) * rosterPageSize;
-    return filteredVendors.slice(start, start + rosterPageSize);
+    const size = Math.max(1, Number(rosterPageSize) || 5);
+    const totalPages = Math.max(1, Math.ceil(filteredVendors.length / size));
+    const safePage = Math.min(Math.max(1, rosterPage), totalPages);
+    const start = (safePage - 1) * size;
+    return filteredVendors.slice(start, start + size);
   }, [filteredVendors, rosterPage, rosterPageSize]);
+
+  useEffect(() => {
+    const size = Math.max(1, Number(rosterPageSize) || 5);
+    const totalPages = Math.max(1, Math.ceil(filteredVendors.length / size));
+    if (rosterPage > totalPages) {
+      setRosterPage(totalPages);
+    }
+  }, [filteredVendors.length, rosterPage, rosterPageSize]);
 
   // Selected Vendor Detail
   const currentVendor = vendors.find((v) => v.id === selectedVendorId);
