@@ -1101,22 +1101,6 @@ export default function ReportsPage() {
                 pageSizeOptions={[5, 10, 20, 50]}
               />
             </div>
-
-            {/* Accountant Formal Sign-off Stamps */}
-            <div className="p-5 border-t border-slate-200 bg-slate-50/50 grid grid-cols-3 gap-6 text-center text-xs text-slate-500">
-              <div className="border-t border-dashed border-slate-300 pt-2.5">
-                <span className="font-bold text-slate-800 block text-xs">Chief Financial Accountant</span>
-                <span className="text-[10px] text-slate-400">Ledger Verified &amp; Balanced</span>
-              </div>
-              <div className="border-t border-dashed border-slate-300 pt-2.5">
-                <span className="font-bold text-slate-800 block text-xs">Site Project Manager</span>
-                <span className="text-[10px] text-slate-400">Field Audit &amp; Labor Verified</span>
-              </div>
-              <div className="border-t border-dashed border-slate-300 pt-2.5">
-                <span className="font-bold text-slate-800 block text-xs">Managing Director / Owner</span>
-                <span className="text-[10px] text-slate-400">Final Financial Approval</span>
-              </div>
-            </div>
           </div>
         )}
       </div>
