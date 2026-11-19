@@ -127,6 +127,7 @@ function parseCSV(text: string): { headers: string[]; rows: Record<string, strin
 
 type ImportTargetTable =
   | "AUTO_DETECT"
+  | "ALL_DATA"
   | "SITES"
   | "VENDORS"
   | "WORKERS"
@@ -149,14 +150,8 @@ export default function BackupPage() {
     siteIncomes,
     companyExpenses,
     salarySlips,
-    addSite,
-    addVendor,
-    addWorker,
-    recordMaterialPurchase,
-    assignWorkerWorkLog,
-    recordCompanyExpense,
-    recordSiteIncome,
     canAccessPage,
+    refreshData,
   } = useConstruction();
 
   const [lastExportTime, setLastExportTime] = useState<string | null>(null);
@@ -409,21 +404,27 @@ export default function BackupPage() {
 
         // Auto-detect target table by inspecting headers
         const headerLower = headers.map((h) => h.toLowerCase()).join(" ");
-        let detected: ImportTargetTable = "SITES";
+        let detected: ImportTargetTable = "ALL_DATA";
 
-        if (headerLower.includes("vendor") && (headerLower.includes("trade") || headerLower.includes("phone"))) {
+        if (
+          headerLower.includes("transaction type") ||
+          (headerLower.includes("inflow") && headerLower.includes("outflow")) ||
+          (headerLower.includes("party") && headerLower.includes("voucher"))
+        ) {
+          detected = "ALL_DATA";
+        } else if (headerLower.includes("vendor") && (headerLower.includes("phone") || headerLower.includes("vendor name") || headerLower.includes("trade category"))) {
           detected = "VENDORS";
-        } else if (headerLower.includes("worker") && (headerLower.includes("trade") || headerLower.includes("daily wage") || headerLower.includes("salary"))) {
+        } else if (headerLower.includes("worker") && (headerLower.includes("daily wage") || headerLower.includes("worker name") || headerLower.includes("monthly salary"))) {
           detected = "WORKERS";
-        } else if (headerLower.includes("bill") || (headerLower.includes("purchase") && headerLower.includes("vendor"))) {
+        } else if (headerLower.includes("voucher") && (headerLower.includes("purchase") || headerLower.includes("bill"))) {
           detected = "PURCHASES";
-        } else if (headerLower.includes("wage") && headerLower.includes("work date")) {
+        } else if (headerLower.includes("wage") && (headerLower.includes("work date") || headerLower.includes("wage amount"))) {
           detected = "WORK_LOGS";
-        } else if (headerLower.includes("expense") || headerLower.includes("category")) {
+        } else if (headerLower.includes("expense") || headerLower.includes("overhead")) {
           detected = "EXPENSES";
         } else if (headerLower.includes("inflow") || headerLower.includes("received from")) {
           detected = "INCOMES";
-        } else if (headerLower.includes("site") || headerLower.includes("budget")) {
+        } else if (headerLower.includes("site") || headerLower.includes("budget") || headerLower.includes("location")) {
           detected = "SITES";
         }
 
@@ -440,7 +441,7 @@ export default function BackupPage() {
 
   const getEffectiveTarget = (): ImportTargetTable => {
     if (selectedTarget === "AUTO_DETECT") {
-      return detectedTarget || "SITES";
+      return detectedTarget || "ALL_DATA";
     }
     return selectedTarget;
   };
@@ -451,154 +452,42 @@ export default function BackupPage() {
     setUploadStatus(null);
 
     const target = getEffectiveTarget();
-    let importedCount = 0;
 
     try {
-      for (const row of parsedRows) {
-        const getVal = (possibleNames: string[]): string => {
-          for (const name of possibleNames) {
-            for (const key of Object.keys(row)) {
-              if (key.toLowerCase().trim() === name.toLowerCase().trim()) {
-                return String(row[key] || "").trim();
-              }
-            }
-          }
-          return "";
-        };
-
-        const parseNum = (possibleNames: string[], defaultVal = 0): number => {
-          const val = getVal(possibleNames);
-          const cleaned = val.replace(/[^0-9.-]/g, "");
-          const num = parseFloat(cleaned);
-          return isNaN(num) ? defaultVal : num;
-        };
-
-        if (target === "SITES") {
-          const name = getVal(["Site Name", "Name", "Site"]);
-          const clientName = getVal(["Client Name", "Client"]) || "Direct Client";
-          if (name) {
-            await addSite({
-              name,
-              clientName,
-              location: getVal(["Location", "City", "Address"]),
-              status: (getVal(["Status", "Project Status"]).toUpperCase() || "ACTIVE") as any,
-              estimatedBudget: parseNum(["Estimated Budget", "Budget"]),
-              openingBalance: parseNum(["Opening Balance"]),
-            });
-            importedCount++;
-          }
-        } else if (target === "VENDORS") {
-          const name = getVal(["Vendor Name", "Name", "Vendor"]);
-          if (name) {
-            await addVendor({
-              name,
-              phone: getVal(["Phone", "Mobile", "Contact"]),
-              tradeCategory: getVal(["Category", "Trade Category", "Trade"]) || "General Materials",
-              openingBalance: parseNum(["Opening Balance"]),
-              notes: getVal(["Notes", "Description"]),
-            });
-            importedCount++;
-          }
-        } else if (target === "WORKERS") {
-          const name = getVal(["Worker Name", "Name", "Worker"]);
-          if (name) {
-            await addWorker({
-              name,
-              phone: getVal(["Phone", "Mobile"]),
-              trade: getVal(["Trade / Role", "Trade", "Role"]) || "Helper",
-              compensationType: (getVal(["Compensation Type"]).toUpperCase() || "DAILY_WAGE") as any,
-              defaultDailyWage: parseNum(["Daily Wage", "Default Daily Wage"]),
-              monthlySalary: parseNum(["Monthly Salary"]),
-              openingBalance: parseNum(["Opening Balance"]),
-              isActive: getVal(["Status"]).toLowerCase() !== "inactive",
-            });
-            importedCount++;
-          }
-        } else if (target === "PURCHASES") {
-          const amount = parseNum(["Amount", "Bill Amount"]);
-          if (amount > 0 && vendors.length > 0 && sites.length > 0) {
-            const vendorName = getVal(["Vendor Name", "Vendor"]);
-            const siteName = getVal(["Site Name", "Site"]);
-            const matchedVendor = vendors.find((v) => v.name.toLowerCase() === vendorName.toLowerCase()) || vendors[0];
-            const matchedSite = sites.find((s) => s.name.toLowerCase() === siteName.toLowerCase()) || sites[0];
-
-            await recordMaterialPurchase({
-              vendorId: matchedVendor.id,
-              siteId: matchedSite.id,
-              amount,
-              voucherNo: getVal(["Voucher / Bill No", "Voucher No", "Bill No"]),
-              purchaseDate: getVal(["Date", "Purchase Date"]) || getTodayStr(),
-              notes: getVal(["Notes"]),
-            });
-            importedCount++;
-          }
-        } else if (target === "WORK_LOGS") {
-          const amount = parseNum(["Wage Amount", "Wage Earned", "Amount"]);
-          if (amount > 0 && workers.length > 0 && sites.length > 0) {
-            const workerName = getVal(["Worker Name", "Worker"]);
-            const siteName = getVal(["Site Name", "Site"]);
-            const matchedWorker = workers.find((w) => w.name.toLowerCase() === workerName.toLowerCase()) || workers[0];
-            const matchedSite = sites.find((s) => s.name.toLowerCase() === siteName.toLowerCase()) || sites[0];
-
-            await assignWorkerWorkLog({
-              workerId: matchedWorker.id,
-              siteId: matchedSite.id,
-              wageAmount: amount,
-              workDate: getVal(["Work Date", "Date"]) || getTodayStr(),
-              notes: getVal(["Notes"]),
-            });
-            importedCount++;
-          }
-        } else if (target === "EXPENSES") {
-          const amount = parseNum(["Amount"]);
-          if (amount > 0) {
-            const siteName = getVal(["Site Name", "Site"]);
-            const matchedSite = sites.find((s) => s.name.toLowerCase() === siteName.toLowerCase());
-
-            await recordCompanyExpense({
-              amount,
-              category: (getVal(["Expense Category", "Category"]).toUpperCase() || "MISCELLANEOUS") as any,
-              siteId: matchedSite?.id,
-              expenseDate: getVal(["Date", "Expense Date"]) || getTodayStr(),
-              paymentMode: (getVal(["Payment Mode"]).toUpperCase() || "CASH") as any,
-              voucherNo: getVal(["Voucher No"]),
-              notes: getVal(["Notes"]),
-            });
-            importedCount++;
-          }
-        } else if (target === "INCOMES") {
-          const amount = parseNum(["Amount", "Inflow Amount"]);
-          if (amount > 0 && sites.length > 0) {
-            const siteName = getVal(["Site Name", "Site"]);
-            const matchedSite = sites.find((s) => s.name.toLowerCase() === siteName.toLowerCase()) || sites[0];
-
-            await recordSiteIncome({
-              siteId: matchedSite.id,
-              amount,
-              receivedFrom: getVal(["Received From", "Client"]),
-              incomeDate: getVal(["Date", "Income Date"]) || getTodayStr(),
-              paymentMode: (getVal(["Payment Mode"]).toUpperCase() || "BANK_TRANSFER") as any,
-              referenceNo: getVal(["Reference / Cheque No", "Reference"]),
-              notes: getVal(["Notes"]),
-            });
-            importedCount++;
-          }
-        }
-      }
-
-      setUploadStatus({
-        success: true,
-        message: `Successfully imported ${importedCount} records into ${target} from CSV!`,
+      const res = await fetch("/api/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "IMPORT_CSV_BATCH",
+          payload: {
+            target,
+            rows: parsedRows,
+          },
+        }),
       });
 
-      setParsedRows([]);
-      setParsedHeaders([]);
-      setCsvFileName("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      const data = await res.json();
+
+      if (data.success) {
+        await refreshData();
+        setUploadStatus({
+          success: true,
+          message: data.message || `Successfully imported ${data.count} records into ${target} from CSV!`,
+        });
+        setParsedRows([]);
+        setParsedHeaders([]);
+        setCsvFileName("");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      } else {
+        setUploadStatus({
+          success: false,
+          message: data.message || "Failed to import CSV data into database.",
+        });
+      }
     } catch (err: any) {
       setUploadStatus({
         success: false,
-        message: err?.message || "An error occurred while importing CSV data.",
+        message: err?.message || "Failed to upload CSV to database.",
       });
     } finally {
       setUploading(false);
@@ -773,6 +662,7 @@ export default function BackupPage() {
                 className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium text-slate-800 focus:border-emerald-500 focus:outline-hidden"
               >
                 <option value="AUTO_DETECT">⚡ Auto-Detect Table from Headers</option>
+                <option value="ALL_DATA">🌐 Master All-Data Export (Transactions &amp; Cash Flow)</option>
                 <option value="SITES">Sites &amp; Construction Projects</option>
                 <option value="VENDORS">Material Vendors</option>
                 <option value="WORKERS">Workers &amp; Laborers</option>
@@ -816,7 +706,7 @@ export default function BackupPage() {
                   <div className="space-y-0.5">
                     <span className="font-bold text-emerald-950 block">{csvFileName}</span>
                     <span className="text-[11px] text-emerald-800">
-                      Target: <strong>{getEffectiveTarget()}</strong> • <strong>{parsedRows.length}</strong> rows detected
+                      Target: <strong>{getEffectiveTarget() === "ALL_DATA" ? "MASTER ALL-DATA (Transactions & Cash Flow)" : getEffectiveTarget()}</strong> • <strong>{parsedRows.length}</strong> rows detected
                     </span>
                   </div>
                   <Badge variant="success" className="text-[10px] font-mono">

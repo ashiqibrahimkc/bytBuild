@@ -142,6 +142,7 @@ interface ConstructionContextType {
   clearAllData: () => void;
   exportFullBackupPayload: () => Record<string, any>;
   restoreFullBackupPayload: (backupJson: Record<string, any>) => { success: boolean; message: string };
+  refreshData: () => Promise<void>;
 }
 
 const ConstructionContext = createContext<ConstructionContextType | undefined>(undefined);
@@ -260,41 +261,42 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
-  // Fetch all live records directly from PostgreSQL Database on mount
+  // Fetch all live records directly from PostgreSQL Database
+  const refreshData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/data");
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setSites(json.data.sites || []);
+          setVendors(json.data.vendors || []);
+          setWorkers(json.data.workers || []);
+          setVendorPurchases(json.data.vendorPurchases || []);
+          setVendorPayments(json.data.vendorPayments || []);
+          setWorkerWorkLogs(json.data.workerWorkLogs || []);
+          setWorkerPayments(json.data.workerPayments || []);
+          setSiteIncomes(json.data.siteIncomes || []);
+          setCompanyExpenses(json.data.companyExpenses || []);
+          setSalarySlips(json.data.salarySlips || []);
+          if (json.data.roles && json.data.roles.length > 0) setRoles(json.data.roles);
+          if (json.data.users) setUsers(json.data.users);
+          if (json.data.auditLogs) setAuditLogs(json.data.auditLogs);
+        }
+      }
+    } catch (err) {
+      console.error("[DB Error] Failed to refresh data:", err);
+    }
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
-    async function loadDatabaseData() {
-      try {
-        const res = await fetch("/api/data");
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && json.data && isMounted) {
-            setSites(json.data.sites || []);
-            setVendors(json.data.vendors || []);
-            setWorkers(json.data.workers || []);
-            setVendorPurchases(json.data.vendorPurchases || []);
-            setVendorPayments(json.data.vendorPayments || []);
-            setWorkerWorkLogs(json.data.workerWorkLogs || []);
-            setWorkerPayments(json.data.workerPayments || []);
-            setSiteIncomes(json.data.siteIncomes || []);
-            setCompanyExpenses(json.data.companyExpenses || []);
-            setSalarySlips(json.data.salarySlips || []);
-            if (json.data.roles && json.data.roles.length > 0) setRoles(json.data.roles);
-            if (json.data.users) setUsers(json.data.users);
-            if (json.data.auditLogs) setAuditLogs(json.data.auditLogs);
-          }
-        }
-      } catch (err) {
-        console.error("[DB Error] Failed to load data from database:", err);
-      } finally {
-        if (isMounted) setIsDbLoading(false);
-      }
-    }
-    loadDatabaseData();
+    refreshData().finally(() => {
+      if (isMounted) setIsDbLoading(false);
+    });
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshData]);
 
   // Load session user from localStorage
   useEffect(() => {
@@ -1714,6 +1716,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
         clearAllData,
         exportFullBackupPayload,
         restoreFullBackupPayload,
+        refreshData,
       }}
     >
       {children}

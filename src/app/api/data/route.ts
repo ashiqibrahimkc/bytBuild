@@ -675,6 +675,421 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, item: serializeRole(updated) });
       }
 
+      // ── Bulk CSV Import ──
+      case "IMPORT_CSV_BATCH": {
+        const target = payload.target || "ALL_DATA";
+        const rows: Record<string, any>[] = Array.isArray(payload.rows) ? payload.rows : [];
+
+        if (rows.length === 0) {
+          return NextResponse.json({ success: true, count: 0, message: "No records found in CSV file." });
+        }
+
+        const getVal = (row: Record<string, any>, possibleKeys: string[]): string => {
+          for (const key of possibleKeys) {
+            const cleanKey = key.toLowerCase().trim();
+            for (const rk of Object.keys(row)) {
+              if (rk.toLowerCase().trim() === cleanKey) {
+                return String(row[rk] ?? "").trim();
+              }
+            }
+          }
+          return "";
+        };
+
+        const parseNum = (row: Record<string, any>, possibleKeys: string[], defaultVal = 0): number => {
+          const val = getVal(row, possibleKeys);
+          if (!val) return defaultVal;
+          const cleaned = val.replace(/[^0-9.-]/g, "");
+          const num = parseFloat(cleaned);
+          return isNaN(num) ? defaultVal : num;
+        };
+
+        const parseDate = (val: string): Date => {
+          if (!val || val === "-") return new Date();
+          const d = new Date(val);
+          return isNaN(d.getTime()) ? new Date() : d;
+        };
+
+        const parsePaymentMode = (val: string): any => {
+          const m = val.toUpperCase().trim();
+          if (m.includes("CASH")) return "CASH";
+          if (m.includes("BANK") || m.includes("TRANSFER") || m.includes("NEFT") || m.includes("RTGS") || m.includes("IMPS")) return "BANK_TRANSFER";
+          if (m.includes("CHEQUE") || m.includes("CHECK")) return "CHEQUE";
+          if (m.includes("UPI") || m.includes("GPAY") || m.includes("PHONEPE")) return "UPI";
+          return "CASH";
+        };
+
+        const parseExpenseCat = (val: string): any => {
+          const c = val.toUpperCase().trim().replace(/[\s-]/g, "_");
+          const valid = [
+            "PETROL_FUEL",
+            "ROOM_RENT",
+            "FOOD_TEA_REFRESHMENTS",
+            "MACHINERY_RENT",
+            "SITE_PERMIT_FEES",
+            "OUTSIDE_LABOR",
+            "SALARY_ADVANCE",
+            "OFFICE_OVERHEAD",
+            "MISCELLANEOUS",
+          ];
+          if (valid.includes(c)) return c;
+          if (c.includes("FUEL") || c.includes("PETROL")) return "PETROL_FUEL";
+          if (c.includes("RENT") && c.includes("ROOM")) return "ROOM_RENT";
+          if (c.includes("RENT") && (c.includes("MACHIN") || c.includes("EQUIP"))) return "MACHINERY_RENT";
+          if (c.includes("FOOD") || c.includes("TEA")) return "FOOD_TEA_REFRESHMENTS";
+          if (c.includes("PERMIT") || c.includes("FEE")) return "SITE_PERMIT_FEES";
+          if (c.includes("OUTSIDE") || c.includes("LABOR") || c.includes("LABOUR")) return "OUTSIDE_LABOR";
+          if (c.includes("SALARY") || c.includes("ADVANCE")) return "SALARY_ADVANCE";
+          if (c.includes("OFFICE") || c.includes("OVERHEAD")) return "OFFICE_OVERHEAD";
+          return "MISCELLANEOUS";
+        };
+
+        let importedCount = 0;
+
+        const existingSites: any[] = await prisma.site.findMany();
+        const existingVendors: any[] = await prisma.vendor.findMany();
+        const existingWorkers: any[] = await prisma.worker.findMany();
+
+        const findOrCreateSite = async (name: string, clientName?: string) => {
+          const trimmed = (name || "").trim();
+          if (!trimmed || trimmed === "-" || trimmed.toLowerCase() === "general" || trimmed.toLowerCase() === "head office") {
+            if (existingSites.length > 0) return existingSites[0];
+            const defSite = await (prisma as any).site.create({
+              data: { name: "Main Project", clientName: clientName || "Client", location: "Active Site", status: "ACTIVE" },
+            });
+            existingSites.push(defSite);
+            return defSite;
+          }
+          let found = existingSites.find((s) => s.name.toLowerCase() === trimmed.toLowerCase());
+          if (!found) {
+            found = await (prisma as any).site.create({
+              data: { name: trimmed, clientName: clientName || "Client", location: "Active Site", status: "ACTIVE" },
+            });
+            existingSites.push(found);
+          }
+          return found;
+        };
+
+        const findOrCreateVendor = async (name: string, category?: string) => {
+          const trimmed = (name || "").trim();
+          if (!trimmed || trimmed === "-" || trimmed.toLowerCase() === "vendor") {
+            if (existingVendors.length > 0) return existingVendors[0];
+            const defVen = await (prisma as any).vendor.create({
+              data: { name: "General Materials Vendor", tradeCategory: category || "General Materials" },
+            });
+            existingVendors.push(defVen);
+            return defVen;
+          }
+          let found = existingVendors.find((v) => v.name.toLowerCase() === trimmed.toLowerCase());
+          if (!found) {
+            found = await (prisma as any).vendor.create({
+              data: { name: trimmed, tradeCategory: category || "General Materials" },
+            });
+            existingVendors.push(found);
+          }
+          return found;
+        };
+
+        const findOrCreateWorker = async (name: string, trade?: string) => {
+          const trimmed = (name || "").trim();
+          if (!trimmed || trimmed === "-" || trimmed.toLowerCase() === "worker") {
+            if (existingWorkers.length > 0) return existingWorkers[0];
+            const defW = await (prisma as any).worker.create({
+              data: { name: "General Worker", trade: trade || "Helper", compensationType: "DAILY_WAGE" },
+            });
+            existingWorkers.push(defW);
+            return defW;
+          }
+          let found = existingWorkers.find((w) => w.name.toLowerCase() === trimmed.toLowerCase());
+          if (!found) {
+            found = await (prisma as any).worker.create({
+              data: { name: trimmed, trade: trade || "Helper", compensationType: "DAILY_WAGE" },
+            });
+            existingWorkers.push(found);
+          }
+          return found;
+        };
+
+        if (target === "ALL_DATA") {
+          for (const row of rows) {
+            const type = getVal(row, ["Transaction Type", "Type", "Transaction"]).toLowerCase();
+            const date = parseDate(getVal(row, ["Date", "Transaction Date"]));
+            const siteName = getVal(row, ["Site Name", "Site", "Project"]);
+            const party = getVal(row, ["Party / Worker / Vendor / Client", "Party", "Vendor", "Worker", "Client", "Name"]);
+            const category = getVal(row, ["Category / Trade", "Category", "Trade"]);
+            const reference = getVal(row, ["Voucher / Reference #", "Voucher", "Reference", "Voucher No", "Bill No", "Reference No"]);
+            const paymentMode = parsePaymentMode(getVal(row, ["Payment Mode", "Mode"]));
+            const inflow = parseNum(row, ["Inflow Amount (INR)", "Inflow", "Credit"]);
+            const outflow = parseNum(row, ["Outflow Amount (INR)", "Outflow", "Debit", "Amount"]);
+            const notes = getVal(row, ["Notes & Descriptions", "Notes", "Description"]);
+
+            if (type.includes("client") || type.includes("inflow")) {
+              const amount = inflow > 0 ? inflow : outflow;
+              if (amount > 0) {
+                const s = await findOrCreateSite(siteName, party);
+                await prisma.siteIncome.create({
+                  data: {
+                    siteId: s.id,
+                    amount,
+                    receivedFrom: party || s.clientName || "Client",
+                    incomeDate: date,
+                    paymentMode,
+                    referenceNo: reference && reference !== "-" ? reference : "",
+                    notes,
+                  },
+                });
+                importedCount++;
+              }
+            } else if (type.includes("material") || type.includes("purchase") || type.includes("bill")) {
+              const amount = outflow > 0 ? outflow : inflow;
+              if (amount > 0) {
+                const s = await findOrCreateSite(siteName);
+                const v = await findOrCreateVendor(party, category);
+                await prisma.vendorPurchase.create({
+                  data: {
+                    vendorId: v.id,
+                    siteId: s.id,
+                    purchaseDate: date,
+                    amount,
+                    voucherNo: reference && reference !== "-" ? reference : "",
+                    notes,
+                  },
+                });
+                importedCount++;
+              }
+            } else if ((type.includes("wage") && !type.includes("payment")) || type.includes("work log") || type.includes("labor")) {
+              const amount = outflow > 0 ? outflow : inflow;
+              if (amount > 0) {
+                const s = await findOrCreateSite(siteName);
+                const w = await findOrCreateWorker(party, category);
+                await prisma.workerWorkLog.create({
+                  data: {
+                    workerId: w.id,
+                    siteId: s.id,
+                    workDate: date,
+                    wageAmount: amount,
+                    notes,
+                  },
+                });
+                importedCount++;
+              }
+            } else if (type.includes("vendor payment")) {
+              const amount = outflow > 0 ? outflow : inflow;
+              if (amount > 0) {
+                const v = await findOrCreateVendor(party, category);
+                const s = siteName && siteName !== "-" ? await findOrCreateSite(siteName) : null;
+                await prisma.vendorPayment.create({
+                  data: {
+                    vendorId: v.id,
+                    siteId: s ? s.id : null,
+                    paymentDate: date,
+                    amount,
+                    paymentMode,
+                    voucherNo: reference && reference !== "-" ? reference : "",
+                    notes,
+                  },
+                });
+                importedCount++;
+              }
+            } else if (type.includes("wage payment") || type.includes("worker payment")) {
+              const amount = outflow > 0 ? outflow : inflow;
+              if (amount > 0) {
+                const w = await findOrCreateWorker(party, category);
+                await prisma.workerPayment.create({
+                  data: {
+                    workerId: w.id,
+                    paymentDate: date,
+                    amount,
+                    paymentMode,
+                    voucherNo: reference && reference !== "-" ? reference : "",
+                    notes,
+                  },
+                });
+                importedCount++;
+              }
+            } else if (type.includes("salary")) {
+              const amount = outflow > 0 ? outflow : inflow;
+              if (amount > 0) {
+                const w = await findOrCreateWorker(party, category);
+                const slipNumber = reference && reference !== "-" ? reference : `SLIP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                const monthStr = date.toISOString().slice(0, 7);
+                await (prisma as any).salarySlip.create({
+                  data: {
+                    slipNumber,
+                    workerId: w.id,
+                    workerName: w.name,
+                    workerTrade: category || w.trade,
+                    monthYear: monthStr,
+                    monthLabel: monthStr,
+                    paymentDate: date,
+                    baseSalary: amount,
+                    advanceDeductions: 0,
+                    netPayableAmount: amount,
+                    paymentMode,
+                    notes,
+                  },
+                });
+                importedCount++;
+              }
+            } else if (type.includes("expense") || type.includes("overhead")) {
+              const amount = outflow > 0 ? outflow : inflow;
+              if (amount > 0) {
+                const s = siteName && siteName !== "-" && siteName.toLowerCase() !== "head office" ? await findOrCreateSite(siteName) : null;
+                const categoryEnum = parseExpenseCat(category);
+                await prisma.companyExpense.create({
+                  data: {
+                    amount,
+                    category: categoryEnum,
+                    siteId: s ? s.id : null,
+                    expenseDate: date,
+                    paymentMode,
+                    voucherNo: reference && reference !== "-" ? reference : "",
+                    notes,
+                  },
+                });
+                importedCount++;
+              }
+            }
+          }
+        } else if (target === "SITES") {
+          for (const row of rows) {
+            const name = getVal(row, ["Site Name", "Name", "Site"]);
+            if (name) {
+              const clientName = getVal(row, ["Client Name", "Client"]) || "Direct Client";
+              const location = getVal(row, ["Location", "City", "Address"]);
+              const statusRaw = getVal(row, ["Status", "Project Status"]).toUpperCase();
+              const status = ["ACTIVE", "COMPLETED", "ON_HOLD"].includes(statusRaw) ? statusRaw : "ACTIVE";
+              const estimatedBudget = parseNum(row, ["Estimated Budget", "Budget"]);
+              const openingBalance = parseNum(row, ["Opening Balance"]);
+              await (prisma as any).site.create({
+                data: { name, clientName, location, status, estimatedBudget, openingBalance },
+              });
+              importedCount++;
+            }
+          }
+        } else if (target === "VENDORS") {
+          for (const row of rows) {
+            const name = getVal(row, ["Vendor Name", "Name", "Vendor", "Party", "Party / Worker / Vendor / Client"]);
+            if (name) {
+              const phone = getVal(row, ["Phone", "Mobile", "Contact"]);
+              const tradeCategory = getVal(row, ["Category", "Trade Category", "Trade"]) || "General Materials";
+              const openingBalance = parseNum(row, ["Opening Balance"]);
+              const notes = getVal(row, ["Notes", "Description"]);
+              await (prisma as any).vendor.create({
+                data: { name, phone, tradeCategory, notes, openingBalance },
+              });
+              importedCount++;
+            }
+          }
+        } else if (target === "WORKERS") {
+          for (const row of rows) {
+            const name = getVal(row, ["Worker Name", "Name", "Worker", "Party", "Party / Worker / Vendor / Client"]);
+            if (name) {
+              const phone = getVal(row, ["Phone", "Mobile", "Contact"]);
+              const trade = getVal(row, ["Trade / Role", "Trade", "Role"]) || "Helper";
+              const compRaw = getVal(row, ["Compensation Type"]).toUpperCase();
+              const compensationType = ["DAILY_WAGE", "MONTHLY_SALARY"].includes(compRaw) ? compRaw : "DAILY_WAGE";
+              const defaultDailyWage = parseNum(row, ["Daily Wage", "Default Daily Wage"]);
+              const monthlySalary = parseNum(row, ["Monthly Salary"]);
+              const openingBalance = parseNum(row, ["Opening Balance"]);
+              const isActive = getVal(row, ["Status"]).toLowerCase() !== "inactive";
+              await (prisma as any).worker.create({
+                data: { name, phone, trade, compensationType, defaultDailyWage, monthlySalary, openingBalance, isActive },
+              });
+              importedCount++;
+            }
+          }
+        } else if (target === "PURCHASES") {
+          for (const row of rows) {
+            const amount = parseNum(row, ["Amount", "Bill Amount", "Outflow Amount (INR)", "Outflow"]);
+            if (amount > 0) {
+              const vendorName = getVal(row, ["Vendor Name", "Vendor", "Party / Worker / Vendor / Client", "Party"]);
+              const siteName = getVal(row, ["Site Name", "Site"]);
+              const v = await findOrCreateVendor(vendorName);
+              const s = await findOrCreateSite(siteName);
+              await prisma.vendorPurchase.create({
+                data: {
+                  vendorId: v.id,
+                  siteId: s.id,
+                  amount,
+                  voucherNo: getVal(row, ["Voucher / Reference #", "Voucher No", "Bill No"]),
+                  purchaseDate: parseDate(getVal(row, ["Date", "Purchase Date"])),
+                  notes: getVal(row, ["Notes", "Description", "Notes & Descriptions"]),
+                },
+              });
+              importedCount++;
+            }
+          }
+        } else if (target === "WORK_LOGS") {
+          for (const row of rows) {
+            const amount = parseNum(row, ["Wage Amount", "Wage Earned", "Amount", "Outflow Amount (INR)", "Outflow"]);
+            if (amount > 0) {
+              const workerName = getVal(row, ["Worker Name", "Worker", "Party / Worker / Vendor / Client", "Party"]);
+              const siteName = getVal(row, ["Site Name", "Site"]);
+              const w = await findOrCreateWorker(workerName);
+              const s = await findOrCreateSite(siteName);
+              await prisma.workerWorkLog.create({
+                data: {
+                  workerId: w.id,
+                  siteId: s.id,
+                  wageAmount: amount,
+                  workDate: parseDate(getVal(row, ["Work Date", "Date"])),
+                  notes: getVal(row, ["Notes", "Description", "Notes & Descriptions"]),
+                },
+              });
+              importedCount++;
+            }
+          }
+        } else if (target === "EXPENSES") {
+          for (const row of rows) {
+            const amount = parseNum(row, ["Amount", "Outflow Amount (INR)", "Outflow"]);
+            if (amount > 0) {
+              const siteName = getVal(row, ["Site Name", "Site"]);
+              const s = siteName && siteName !== "-" ? await findOrCreateSite(siteName) : null;
+              await prisma.companyExpense.create({
+                data: {
+                  amount,
+                  category: parseExpenseCat(getVal(row, ["Expense Category", "Category", "Category / Trade"])),
+                  siteId: s ? s.id : null,
+                  expenseDate: parseDate(getVal(row, ["Date", "Expense Date"])),
+                  paymentMode: parsePaymentMode(getVal(row, ["Payment Mode", "Mode"])),
+                  voucherNo: getVal(row, ["Voucher No", "Voucher / Reference #"]),
+                  notes: getVal(row, ["Notes", "Notes & Descriptions"]),
+                },
+              });
+              importedCount++;
+            }
+          }
+        } else if (target === "INCOMES") {
+          for (const row of rows) {
+            const amount = parseNum(row, ["Amount", "Inflow Amount (INR)", "Inflow", "Credit"]);
+            if (amount > 0) {
+              const siteName = getVal(row, ["Site Name", "Site"]);
+              const s = await findOrCreateSite(siteName);
+              await prisma.siteIncome.create({
+                data: {
+                  siteId: s.id,
+                  amount,
+                  receivedFrom: getVal(row, ["Received From", "Client", "Party / Worker / Vendor / Client", "Party"]),
+                  incomeDate: parseDate(getVal(row, ["Date", "Income Date"])),
+                  paymentMode: parsePaymentMode(getVal(row, ["Payment Mode", "Mode"])),
+                  referenceNo: getVal(row, ["Reference / Cheque No", "Reference", "Voucher / Reference #"]),
+                  notes: getVal(row, ["Notes", "Notes & Descriptions"]),
+                },
+              });
+              importedCount++;
+            }
+          }
+        }
+
+        return NextResponse.json({
+          success: true,
+          count: importedCount,
+          target,
+          message: `Successfully imported ${importedCount} records into ${target} from CSV!`,
+        });
+      }
+
       default:
         return NextResponse.json({ success: false, message: `Unknown action: ${action}` }, { status: 400 });
     }
