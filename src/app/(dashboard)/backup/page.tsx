@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   FileSpreadsheet,
   Download,
@@ -15,6 +15,8 @@ import {
   Receipt,
   Check,
   ShieldCheck,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import { useConstruction } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -177,6 +179,36 @@ export default function BackupPage() {
     } catch {}
   }, []);
 
+  // Latest transaction date recorded in the current database
+  const latestDataDate = useMemo(() => {
+    const dates: string[] = [];
+    siteIncomes.forEach((i) => i.incomeDate && dates.push(i.incomeDate));
+    vendorPurchases.forEach((p) => p.purchaseDate && dates.push(p.purchaseDate));
+    workerWorkLogs.forEach((w) => w.workDate && dates.push(w.workDate));
+    companyExpenses.forEach((e) => e.expenseDate && dates.push(e.expenseDate));
+    vendorPayments.forEach((vp) => vp.paymentDate && dates.push(vp.paymentDate));
+    workerPayments.forEach((wp) => wp.paymentDate && dates.push(wp.paymentDate));
+    salarySlips.forEach((s) => s.paymentDate && dates.push(s.paymentDate));
+
+    if (dates.length === 0) return null;
+    dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    const latest = new Date(dates[0]);
+    if (isNaN(latest.getTime())) return null;
+    return latest.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }, [
+    siteIncomes,
+    vendorPurchases,
+    workerWorkLogs,
+    companyExpenses,
+    vendorPayments,
+    workerPayments,
+    salarySlips,
+  ]);
+
   if (isDbLoading) {
     return <BackupSkeleton />;
   }
@@ -195,12 +227,13 @@ export default function BackupPage() {
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      hour12: true,
     });
     setLastExportTime(timeStr);
     try {
       localStorage.setItem("bytbuild_last_csv_export", timeStr);
     } catch {}
-    setExportNotice(`Exported ${label} (${timeStr})`);
+    setExportNotice(`Exported ${label} on ${timeStr}`);
     setTimeout(() => setExportNotice(null), 4000);
   };
 
@@ -526,12 +559,12 @@ export default function BackupPage() {
           </div>
         </div>
 
-        {lastExportTime && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs">
-            <History className="h-3.5 w-3.5 text-emerald-600" />
-            <span>Last Activity: {lastExportTime}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-xs font-mono bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs">
+          <History className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+          <span className="text-slate-500">
+            Latest Download: <strong className="text-slate-900">{lastExportTime || "Not downloaded yet"}</strong>
+          </span>
+        </div>
       </div>
 
       {exportNotice && (
@@ -591,6 +624,23 @@ export default function BackupPage() {
                 <Download className="h-5 w-5 mr-2" />
                 Download All Data (CSV)
               </Button>
+            </div>
+
+            {/* Latest Download Data Date Card */}
+            <div className="rounded-xl border border-emerald-200/90 bg-emerald-50/70 p-3.5 space-y-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-emerald-950 flex items-center gap-1.5 text-[11px] uppercase tracking-wide font-mono">
+                  <Clock className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
+                  Latest Download Date:
+                </span>
+                <span className="font-mono text-[11px] font-extrabold text-emerald-900 bg-emerald-100/80 border border-emerald-300/80 px-2 py-0.5 rounded-md">
+                  {lastExportTime || "Never downloaded yet"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-emerald-200/60 font-mono">
+                <span>Database Records As Of:</span>
+                <span className="font-bold text-slate-800">{latestDataDate || "Current Date"}</span>
+              </div>
             </div>
 
             {/* Included Data Breakdown List */}

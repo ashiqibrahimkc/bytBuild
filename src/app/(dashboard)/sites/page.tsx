@@ -1399,85 +1399,91 @@ export default function SitesPage() {
                 </div>
               </div>
 
-              {/* ── Sub-Filters: Vendor Filter & Worker Filter ── */}
-              <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-slate-100 text-xs">
-                <span className="font-bold text-slate-500 font-mono text-[11px] uppercase tracking-wide flex items-center gap-1">
+              {/* ── Sub-Filters: Vendor Filter & Worker Filter (Mobile Responsive) ── */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2.5 pt-2 border-t border-slate-100 text-xs">
+                <span className="font-bold text-slate-500 font-mono text-[11px] uppercase tracking-wide flex items-center gap-1 shrink-0">
                   <Filter className="h-3 w-3 text-amber-600" />
                   Filters:
                 </span>
 
-                {/* Vendor Filter Dropdown */}
-                <div className="flex items-center gap-1.5 bg-amber-50/80 border border-amber-200 rounded-lg px-2.5 py-1">
-                  <Truck className="h-3.5 w-3.5 text-amber-700 shrink-0" />
-                  <span className="text-amber-800 font-semibold text-[11px]">Vendor:</span>
-                  <select
-                    value={statementVendorFilter}
-                    onChange={(e) => {
-                      setStatementVendorFilter(e.target.value);
-                      setStatementPage(1);
-                    }}
-                    className="bg-transparent text-xs font-bold text-amber-950 focus:outline-none cursor-pointer pr-1"
-                  >
-                    <option value="ALL">All Vendors ({vendors.length})</option>
-                    {vendors.map((v) => {
-                      const count = allSitePurchases.filter((p) => p.vendorId === v.id).length;
-                      return (
-                        <option key={v.id} value={v.id}>
-                          {v.name} ({v.tradeCategory}){count > 0 ? ` • ${count} bills` : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {statementVendorFilter !== "ALL" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStatementVendorFilter("ALL");
-                        setStatementPage(1);
-                      }}
-                      className="ml-1 text-slate-400 hover:text-rose-600 font-bold text-[10px]"
-                      title="Clear vendor filter"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
+                <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+                  {/* Vendor Filter Dropdown */}
+                  <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-amber-50/80 border border-amber-200 rounded-lg px-2.5 py-1.5 sm:py-1 w-full sm:w-auto shadow-2xs">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1 sm:flex-none">
+                      <Truck className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                      <span className="text-amber-800 font-semibold text-[11px] shrink-0">Vendor:</span>
+                      <select
+                        value={statementVendorFilter}
+                        onChange={(e) => {
+                          setStatementVendorFilter(e.target.value);
+                          setStatementPage(1);
+                        }}
+                        className="bg-transparent text-xs font-bold text-amber-950 focus:outline-none cursor-pointer w-full sm:max-w-[160px] truncate pr-1"
+                      >
+                        <option value="ALL">All Vendors ({vendors.length})</option>
+                        {vendors.map((v) => {
+                          const count = allSitePurchases.filter((p) => p.vendorId === v.id).length;
+                          return (
+                            <option key={v.id} value={v.id}>
+                              {v.name} ({v.tradeCategory}){count > 0 ? ` • ${count} bills` : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    {statementVendorFilter !== "ALL" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStatementVendorFilter("ALL");
+                          setStatementPage(1);
+                        }}
+                        className="ml-1 text-slate-400 hover:text-rose-600 font-bold text-[10px] shrink-0 cursor-pointer"
+                        title="Clear vendor filter"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
 
-                {/* Worker Filter Dropdown */}
-                <div className="flex items-center gap-1.5 bg-blue-50/80 border border-blue-200 rounded-lg px-2.5 py-1">
-                  <Users className="h-3.5 w-3.5 text-blue-700 shrink-0" />
-                  <span className="text-blue-800 font-semibold text-[11px]">Worker:</span>
-                  <select
-                    value={statementWorkerFilter}
-                    onChange={(e) => {
-                      setStatementWorkerFilter(e.target.value);
-                      setStatementPage(1);
-                    }}
-                    className="bg-transparent text-xs font-bold text-blue-950 focus:outline-none cursor-pointer pr-1"
-                  >
-                    <option value="ALL">All Workers ({workers.length})</option>
-                    {workers.map((w) => {
-                      const count = allSiteWorkLogs.filter((l) => l.workerId === w.id).length;
-                      return (
-                        <option key={w.id} value={w.id}>
-                          {w.name} ({w.trade}){count > 0 ? ` • ${count} logs` : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {statementWorkerFilter !== "ALL" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStatementWorkerFilter("ALL");
-                        setStatementPage(1);
-                      }}
-                      className="ml-1 text-slate-400 hover:text-rose-600 font-bold text-[10px]"
-                      title="Clear worker filter"
-                    >
-                      ✕
-                    </button>
-                  )}
+                  {/* Worker Filter Dropdown */}
+                  <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-blue-50/80 border border-blue-200 rounded-lg px-2.5 py-1.5 sm:py-1 w-full sm:w-auto shadow-2xs">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1 sm:flex-none">
+                      <Users className="h-3.5 w-3.5 text-blue-700 shrink-0" />
+                      <span className="text-blue-800 font-semibold text-[11px] shrink-0">Worker:</span>
+                      <select
+                        value={statementWorkerFilter}
+                        onChange={(e) => {
+                          setStatementWorkerFilter(e.target.value);
+                          setStatementPage(1);
+                        }}
+                        className="bg-transparent text-xs font-bold text-blue-950 focus:outline-none cursor-pointer w-full sm:max-w-[160px] truncate pr-1"
+                      >
+                        <option value="ALL">All Workers ({workers.length})</option>
+                        {workers.map((w) => {
+                          const count = allSiteWorkLogs.filter((l) => l.workerId === w.id).length;
+                          return (
+                            <option key={w.id} value={w.id}>
+                              {w.name} ({w.trade}){count > 0 ? ` • ${count} logs` : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    {statementWorkerFilter !== "ALL" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStatementWorkerFilter("ALL");
+                          setStatementPage(1);
+                        }}
+                        className="ml-1 text-slate-400 hover:text-rose-600 font-bold text-[10px] shrink-0 cursor-pointer"
+                        title="Clear worker filter"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {(statementVendorFilter !== "ALL" || statementWorkerFilter !== "ALL") && (
@@ -1488,7 +1494,7 @@ export default function SitesPage() {
                       setStatementWorkerFilter("ALL");
                       setStatementPage(1);
                     }}
-                    className="text-[11px] text-rose-600 hover:text-rose-800 hover:underline font-semibold ml-1 cursor-pointer"
+                    className="text-[11px] text-rose-600 hover:text-rose-800 hover:underline font-semibold sm:ml-1 cursor-pointer w-full sm:w-auto text-center"
                   >
                     Reset Filters
                   </button>

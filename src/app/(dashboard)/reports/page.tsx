@@ -603,24 +603,27 @@ export default function ReportsPage() {
         })}
       </div>
 
-      {/* ── Unified Compact Filter Toolbar (Aligned & Centered) ──────────── */}
-      <div className="rounded-xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-2xs print:hidden">
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-center">
-          {/* Target Filter (Aligned & Text-Center) */}
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-xs font-bold text-slate-700 font-mono uppercase tracking-wider text-center shrink-0">
+      {/* ── Unified Filter Toolbar (Mobile Responsive & Clean) ──────────── */}
+      <div className="rounded-xl border border-slate-200 bg-white p-3 sm:p-4 shadow-2xs print:hidden">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
+          
+          {/* 1. Filter Target Section */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2.5 w-full lg:w-auto">
+            <span className="text-[11px] font-bold text-slate-500 font-mono uppercase tracking-wider shrink-0 flex items-center gap-1">
+              <Filter className="h-3 w-3 text-amber-600" />
               Filter Target:
             </span>
 
             {activeReport === "SITE_STATEMENT" && (
-              <div className="flex flex-wrap items-center justify-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 w-full sm:w-auto">
+                {/* Site Dropdown */}
                 <select
                   value={selectedSiteId}
                   onChange={(e) => {
                     setSelectedSiteId(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-2xs focus:ring-2 focus:ring-amber-500 focus:outline-none min-w-[200px] text-center cursor-pointer"
+                  className="h-9.5 sm:h-9 w-full sm:w-auto rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-2xs focus:ring-2 focus:ring-amber-500 focus:outline-none sm:min-w-[210px] cursor-pointer"
                 >
                   <option value="ALL">All Sites (Consolidated Statement)</option>
                   {sites.map((s) => (
@@ -630,86 +633,94 @@ export default function ReportsPage() {
                   ))}
                 </select>
 
-                {/* Vendor Filter */}
-                <div className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50/70 px-2.5 h-9 shadow-2xs">
-                  <Truck className="h-3.5 w-3.5 text-amber-700 shrink-0" />
-                  <span className="text-amber-800 font-semibold text-[11px]">Vendor:</span>
-                  <select
-                    value={selectedVendorId}
-                    onChange={(e) => {
-                      setSelectedVendorId(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="bg-transparent text-xs font-bold text-amber-950 focus:outline-none cursor-pointer max-w-[170px]"
-                  >
-                    <option value="ALL">All Vendors ({vendors.length})</option>
-                    {vendors.map((v) => {
-                      const count = (selectedSiteId === "ALL"
-                        ? vendorPurchases
-                        : vendorPurchases.filter((p) => p.siteId === selectedSiteId)
-                      ).filter((p) => p.vendorId === v.id).length;
-                      return (
-                        <option key={v.id} value={v.id}>
-                          {v.name} ({v.tradeCategory}){count > 0 ? ` • ${count} bills` : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {selectedVendorId !== "ALL" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedVendorId("ALL");
-                        setCurrentPage(1);
-                      }}
-                      className="ml-0.5 text-slate-400 hover:text-rose-600 font-bold text-xs"
-                      title="Clear vendor filter"
-                    >
-                      ✕
-                    </button>
-                  )}
+                {/* Vendor & Worker Filters Container on Mobile */}
+                <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+                  {/* Vendor Filter */}
+                  <div className="flex items-center justify-between sm:justify-start gap-1.5 rounded-lg border border-amber-200 bg-amber-50/70 px-2.5 h-9.5 sm:h-9 shadow-2xs w-full sm:w-auto">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1 sm:flex-none">
+                      <Truck className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                      <span className="text-amber-800 font-semibold text-[11px] shrink-0">Vendor:</span>
+                      <select
+                        value={selectedVendorId}
+                        onChange={(e) => {
+                          setSelectedVendorId(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="bg-transparent text-xs font-bold text-amber-950 focus:outline-none cursor-pointer w-full sm:max-w-[160px] truncate"
+                      >
+                        <option value="ALL">All Vendors ({vendors.length})</option>
+                        {vendors.map((v) => {
+                          const count = (selectedSiteId === "ALL"
+                            ? vendorPurchases
+                            : vendorPurchases.filter((p) => p.siteId === selectedSiteId)
+                          ).filter((p) => p.vendorId === v.id).length;
+                          return (
+                            <option key={v.id} value={v.id}>
+                              {v.name} ({v.tradeCategory}){count > 0 ? ` • ${count} bills` : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    {selectedVendorId !== "ALL" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedVendorId("ALL");
+                          setCurrentPage(1);
+                        }}
+                        className="ml-1 text-slate-400 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer"
+                        title="Clear vendor filter"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Worker Filter */}
+                  <div className="flex items-center justify-between sm:justify-start gap-1.5 rounded-lg border border-blue-200 bg-blue-50/70 px-2.5 h-9.5 sm:h-9 shadow-2xs w-full sm:w-auto">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1 sm:flex-none">
+                      <Users className="h-3.5 w-3.5 text-blue-700 shrink-0" />
+                      <span className="text-blue-800 font-semibold text-[11px] shrink-0">Worker:</span>
+                      <select
+                        value={selectedWorkerId}
+                        onChange={(e) => {
+                          setSelectedWorkerId(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="bg-transparent text-xs font-bold text-blue-950 focus:outline-none cursor-pointer w-full sm:max-w-[160px] truncate"
+                      >
+                        <option value="ALL">All Workers ({workers.length})</option>
+                        {workers.map((w) => {
+                          const count = (selectedSiteId === "ALL"
+                            ? workerWorkLogs
+                            : workerWorkLogs.filter((l) => l.siteId === selectedSiteId)
+                          ).filter((l) => l.workerId === w.id).length;
+                          return (
+                            <option key={w.id} value={w.id}>
+                              {w.name} ({w.trade}){count > 0 ? ` • ${count} logs` : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    {selectedWorkerId !== "ALL" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedWorkerId("ALL");
+                          setCurrentPage(1);
+                        }}
+                        className="ml-1 text-slate-400 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer"
+                        title="Clear worker filter"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Worker Filter */}
-                <div className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/70 px-2.5 h-9 shadow-2xs">
-                  <Users className="h-3.5 w-3.5 text-blue-700 shrink-0" />
-                  <span className="text-blue-800 font-semibold text-[11px]">Worker:</span>
-                  <select
-                    value={selectedWorkerId}
-                    onChange={(e) => {
-                      setSelectedWorkerId(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="bg-transparent text-xs font-bold text-blue-950 focus:outline-none cursor-pointer max-w-[170px]"
-                  >
-                    <option value="ALL">All Workers ({workers.length})</option>
-                    {workers.map((w) => {
-                      const count = (selectedSiteId === "ALL"
-                        ? workerWorkLogs
-                        : workerWorkLogs.filter((l) => l.siteId === selectedSiteId)
-                      ).filter((l) => l.workerId === w.id).length;
-                      return (
-                        <option key={w.id} value={w.id}>
-                          {w.name} ({w.trade}){count > 0 ? ` • ${count} logs` : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {selectedWorkerId !== "ALL" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedWorkerId("ALL");
-                        setCurrentPage(1);
-                      }}
-                      className="ml-0.5 text-slate-400 hover:text-rose-600 font-bold text-xs"
-                      title="Clear worker filter"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-
+                {/* Reset Filters Button */}
                 {(selectedVendorId !== "ALL" || selectedWorkerId !== "ALL") && (
                   <button
                     type="button"
@@ -718,10 +729,10 @@ export default function ReportsPage() {
                       setSelectedWorkerId("ALL");
                       setCurrentPage(1);
                     }}
-                    className="inline-flex items-center gap-1 px-2.5 h-9 text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 shadow-2xs transition-colors"
+                    className="inline-flex items-center justify-center gap-1 px-3 h-9 text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 shadow-2xs transition-colors cursor-pointer w-full sm:w-auto"
                   >
                     <RotateCcw className="h-3 w-3" />
-                    Reset
+                    Reset Filters
                   </button>
                 )}
               </div>
@@ -734,7 +745,7 @@ export default function ReportsPage() {
                   setSelectedVendorId(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-2xs focus:ring-2 focus:ring-amber-500 focus:outline-none min-w-[220px] text-center cursor-pointer"
+                className="h-9.5 sm:h-9 w-full sm:w-auto rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-2xs focus:ring-2 focus:ring-amber-500 focus:outline-none sm:min-w-[220px] cursor-pointer"
               >
                 <option value="ALL">All Vendors (Combined Credit)</option>
                 {vendors.map((v) => (
@@ -752,7 +763,7 @@ export default function ReportsPage() {
                   setSelectedWorkerId(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-2xs focus:ring-2 focus:ring-amber-500 focus:outline-none min-w-[220px] text-center cursor-pointer"
+                className="h-9.5 sm:h-9 w-full sm:w-auto rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-2xs focus:ring-2 focus:ring-amber-500 focus:outline-none sm:min-w-[220px] cursor-pointer"
               >
                 <option value="ALL">All Workers (Complete Register)</option>
                 {workers.map((w) => (
@@ -764,19 +775,19 @@ export default function ReportsPage() {
             )}
 
             {(activeReport === "CASH_BOOK" || activeReport === "EXPENSE_CATEGORY") && (
-              <Badge variant="outline" className="text-xs font-mono font-medium text-center">
+              <Badge variant="outline" className="text-xs font-mono font-medium text-center w-fit">
                 Company-wide Consolidated Book
               </Badge>
             )}
           </div>
 
-          {/* Clean Divider */}
+          {/* Clean Divider on large screens */}
           <div className="hidden lg:block h-6 w-px bg-slate-200" />
 
-          {/* Date Controls (Aligned & Text-Center) */}
-          <div className="flex flex-wrap items-center justify-center gap-2.5 text-center">
+          {/* 2. Date Controls (Mobile Responsive) */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full lg:w-auto pt-2 sm:pt-0 border-t border-slate-100 lg:border-t-0">
             {/* Presets */}
-            <div className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-center shadow-2xs">
+            <div className="grid grid-cols-2 xs:grid-cols-4 sm:flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5 shadow-2xs w-full sm:w-auto">
               {[
                 { id: "ALL", label: "All Time" },
                 { id: "THIS_MONTH", label: "This Month" },
@@ -798,39 +809,42 @@ export default function ReportsPage() {
             </div>
 
             {/* Custom Range */}
-            <div className="flex items-center justify-center gap-1.5 text-xs text-slate-600 font-medium">
-              <span className="text-slate-400 font-mono text-[11px] uppercase">Period:</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  setDatePreset("CUSTOM");
-                  setCurrentPage(1);
-                }}
-                className="h-8.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-mono text-center shadow-2xs focus:outline-none focus:ring-1 focus:ring-amber-500"
-              />
-              <span className="text-slate-400">to</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setDatePreset("CUSTOM");
-                  setCurrentPage(1);
-                }}
-                className="h-8.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-mono text-center shadow-2xs focus:outline-none focus:ring-1 focus:ring-amber-500"
-              />
+            <div className="flex flex-wrap items-center justify-between sm:justify-start gap-1.5 text-xs text-slate-600 font-medium w-full sm:w-auto">
+              <span className="text-slate-400 font-mono text-[11px] uppercase shrink-0">Period:</span>
+              <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setDatePreset("CUSTOM");
+                    setCurrentPage(1);
+                  }}
+                  className="h-8.5 rounded-lg border border-slate-200 bg-white px-2 text-xs font-mono text-center shadow-2xs focus:outline-none focus:ring-1 focus:ring-amber-500 w-full sm:w-auto"
+                />
+                <span className="text-slate-400 shrink-0">to</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setDatePreset("CUSTOM");
+                    setCurrentPage(1);
+                  }}
+                  className="h-8.5 rounded-lg border border-slate-200 bg-white px-2 text-xs font-mono text-center shadow-2xs focus:outline-none focus:ring-1 focus:ring-amber-500 w-full sm:w-auto"
+                />
+              </div>
               {(startDate || endDate) && (
                 <button
                   onClick={() => handlePresetSelect("ALL")}
-                  className="text-xs text-rose-600 hover:text-rose-700 hover:underline font-semibold cursor-pointer ml-1"
+                  className="text-xs text-rose-600 hover:text-rose-700 hover:underline font-semibold cursor-pointer ml-1 shrink-0"
                 >
                   Clear
                 </button>
               )}
             </div>
           </div>
+
         </div>
       </div>
 
