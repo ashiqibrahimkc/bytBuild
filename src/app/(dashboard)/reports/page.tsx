@@ -17,6 +17,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   CheckCircle2,
+  RotateCcw,
+  Filter,
 } from "lucide-react";
 import { useConstruction } from "@/lib/store";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -77,6 +79,14 @@ export default function ReportsPage() {
     );
   }, []);
 
+  // Reset statement vendor & worker filters when switching site
+  useEffect(() => {
+    if (activeReport === "SITE_STATEMENT") {
+      setSelectedVendorId("ALL");
+      setSelectedWorkerId("ALL");
+    }
+  }, [selectedSiteId]);
+
   // Quick Preset Date selector
   const handlePresetSelect = (preset: string) => {
     setDatePreset(preset);
@@ -127,45 +137,68 @@ export default function ReportsPage() {
       return siteId === selectedSiteId;
     };
 
+    const hasVendorFilter = selectedVendorId !== "ALL";
+    const hasWorkerFilter = selectedWorkerId !== "ALL";
+
     // Purchases
-    vendorPurchases
-      .filter((p) => isTargetSite(p.siteId) && isDateInRange(p.purchaseDate))
-      .forEach((p) => {
-        const v = vendors.find((ven) => ven.id === p.vendorId);
-        const s = sites.find((site) => site.id === p.siteId);
-        list.push({
-          id: p.id,
-          date: p.purchaseDate,
-          type: "MATERIAL_PURCHASE",
-          party: `${v?.name || "Vendor"} (${v?.tradeCategory || "Material"})${selectedSiteId === "ALL" && s ? ` • ${s.name}` : ""}`,
-          voucher: p.voucherNo,
-          notes: p.notes,
-          debit: p.amount,
-          credit: 0,
+    if (!hasWorkerFilter || hasVendorFilter) {
+      vendorPurchases
+        .filter((p) => {
+          if (!isTargetSite(p.siteId) || !isDateInRange(p.purchaseDate)) return false;
+          if (hasVendorFilter && p.vendorId !== selectedVendorId) return false;
+          return true;
+        })
+        .forEach((p) => {
+          const v = vendors.find((ven) => ven.id === p.vendorId);
+          const s = sites.find((site) => site.id === p.siteId);
+          list.push({
+            id: p.id,
+            date: p.purchaseDate,
+            type: "MATERIAL_PURCHASE",
+            party: `${v?.name || "Vendor"} (${v?.tradeCategory || "Material"})${selectedSiteId === "ALL" && s ? ` • ${s.name}` : ""}`,
+            voucher: p.voucherNo,
+            notes: p.notes,
+            debit: p.amount,
+            credit: 0,
+          });
         });
-      });
+    }
 
     // Labor
-    workerWorkLogs
-      .filter((w) => isTargetSite(w.siteId) && isDateInRange(w.workDate))
-      .forEach((w) => {
-        const wk = workers.find((wrk) => wrk.id === w.workerId);
-        const s = sites.find((site) => site.id === w.siteId);
-        list.push({
-          id: w.id,
-          date: w.workDate,
-          type: "LABOR_WAGE",
-          party: `${wk?.name || "Worker"} (${wk?.trade || "Labor"})${selectedSiteId === "ALL" && s ? ` • ${s.name}` : ""}`,
-          voucher: undefined,
-          notes: w.notes,
-          debit: w.wageAmount,
-          credit: 0,
+    if (!hasVendorFilter || hasWorkerFilter) {
+      workerWorkLogs
+        .filter((w) => {
+          if (!isTargetSite(w.siteId) || !isDateInRange(w.workDate)) return false;
+          if (hasWorkerFilter && w.workerId !== selectedWorkerId) return false;
+          return true;
+        })
+        .forEach((w) => {
+          const wk = workers.find((wrk) => wrk.id === w.workerId);
+          const s = sites.find((site) => site.id === w.siteId);
+          list.push({
+            id: w.id,
+            date: w.workDate,
+            type: "LABOR_WAGE",
+            party: `${wk?.name || "Worker"} (${wk?.trade || "Labor"})${selectedSiteId === "ALL" && s ? ` • ${s.name}` : ""}`,
+            voucher: undefined,
+            notes: w.notes,
+            debit: w.wageAmount,
+            credit: 0,
+          });
         });
-      });
+    }
 
     // Misc
     companyExpenses
-      .filter((e) => (e.siteId ? isTargetSite(e.siteId) : selectedSiteId === "ALL") && isDateInRange(e.expenseDate))
+      .filter((e) => {
+        if (!isDateInRange(e.expenseDate)) return false;
+        if (e.siteId ? !isTargetSite(e.siteId) : selectedSiteId !== "ALL") return false;
+        if (hasVendorFilter && !hasWorkerFilter) return false;
+        if (hasWorkerFilter) {
+          return (e as any).workerId === selectedWorkerId;
+        }
+        return true;
+      })
       .forEach((e) => {
         const s = sites.find((site) => site.id === e.siteId);
         list.push({
@@ -181,7 +214,7 @@ export default function ReportsPage() {
       });
 
     // Incomes
-    if (role === "OWNER") {
+    if (role === "OWNER" && !hasVendorFilter && !hasWorkerFilter) {
       siteIncomes
         .filter((i) => isTargetSite(i.siteId) && isDateInRange(i.incomeDate))
         .forEach((i) => {
@@ -207,6 +240,8 @@ export default function ReportsPage() {
     });
   }, [
     selectedSiteId,
+    selectedVendorId,
+    selectedWorkerId,
     vendorPurchases,
     workerWorkLogs,
     companyExpenses,
@@ -578,21 +613,118 @@ export default function ReportsPage() {
             </span>
 
             {activeReport === "SITE_STATEMENT" && (
-              <select
-                value={selectedSiteId}
-                onChange={(e) => {
-                  setSelectedSiteId(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-2xs focus:ring-2 focus:ring-amber-500 focus:outline-none min-w-[220px] text-center cursor-pointer"
-              >
-                <option value="ALL">All Sites (Consolidated Statement)</option>
-                {sites.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} {s.clientName ? `(${s.clientName})` : ""}
-                  </option>
-                ))}
-              </select>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <select
+                  value={selectedSiteId}
+                  onChange={(e) => {
+                    setSelectedSiteId(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-2xs focus:ring-2 focus:ring-amber-500 focus:outline-none min-w-[200px] text-center cursor-pointer"
+                >
+                  <option value="ALL">All Sites (Consolidated Statement)</option>
+                  {sites.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} {s.clientName ? `(${s.clientName})` : ""}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Vendor Filter */}
+                <div className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50/70 px-2.5 h-9 shadow-2xs">
+                  <Truck className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                  <span className="text-amber-800 font-semibold text-[11px]">Vendor:</span>
+                  <select
+                    value={selectedVendorId}
+                    onChange={(e) => {
+                      setSelectedVendorId(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="bg-transparent text-xs font-bold text-amber-950 focus:outline-none cursor-pointer max-w-[170px]"
+                  >
+                    <option value="ALL">All Vendors ({vendors.length})</option>
+                    {vendors.map((v) => {
+                      const count = (selectedSiteId === "ALL"
+                        ? vendorPurchases
+                        : vendorPurchases.filter((p) => p.siteId === selectedSiteId)
+                      ).filter((p) => p.vendorId === v.id).length;
+                      return (
+                        <option key={v.id} value={v.id}>
+                          {v.name} ({v.tradeCategory}){count > 0 ? ` • ${count} bills` : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {selectedVendorId !== "ALL" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedVendorId("ALL");
+                        setCurrentPage(1);
+                      }}
+                      className="ml-0.5 text-slate-400 hover:text-rose-600 font-bold text-xs"
+                      title="Clear vendor filter"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Worker Filter */}
+                <div className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/70 px-2.5 h-9 shadow-2xs">
+                  <Users className="h-3.5 w-3.5 text-blue-700 shrink-0" />
+                  <span className="text-blue-800 font-semibold text-[11px]">Worker:</span>
+                  <select
+                    value={selectedWorkerId}
+                    onChange={(e) => {
+                      setSelectedWorkerId(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="bg-transparent text-xs font-bold text-blue-950 focus:outline-none cursor-pointer max-w-[170px]"
+                  >
+                    <option value="ALL">All Workers ({workers.length})</option>
+                    {workers.map((w) => {
+                      const count = (selectedSiteId === "ALL"
+                        ? workerWorkLogs
+                        : workerWorkLogs.filter((l) => l.siteId === selectedSiteId)
+                      ).filter((l) => l.workerId === w.id).length;
+                      return (
+                        <option key={w.id} value={w.id}>
+                          {w.name} ({w.trade}){count > 0 ? ` • ${count} logs` : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {selectedWorkerId !== "ALL" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedWorkerId("ALL");
+                        setCurrentPage(1);
+                      }}
+                      className="ml-0.5 text-slate-400 hover:text-rose-600 font-bold text-xs"
+                      title="Clear worker filter"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {(selectedVendorId !== "ALL" || selectedWorkerId !== "ALL") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedVendorId("ALL");
+                      setSelectedWorkerId("ALL");
+                      setCurrentPage(1);
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 h-9 text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 shadow-2xs transition-colors"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Reset
+                  </button>
+                )}
+              </div>
             )}
 
             {activeReport === "VENDOR_LEDGER" && (
@@ -723,10 +855,23 @@ export default function ReportsPage() {
               </p>
 
               <h2 className="text-sm sm:text-base font-bold text-slate-800 pt-0.5">
-                {activeReport === "SITE_STATEMENT" &&
-                  (selectedSiteId === "ALL"
-                    ? "Client Billing Statement: All Sites (Consolidated)"
-                    : `Client Billing Statement: ${currentSiteObj?.name || "Selected Site"}`)}
+                {activeReport === "SITE_STATEMENT" && (
+                  <span>
+                    {selectedSiteId === "ALL"
+                      ? "Client Billing Statement: All Sites (Consolidated)"
+                      : `Client Billing Statement: ${currentSiteObj?.name || "Selected Site"}`}
+                    {selectedVendorId !== "ALL" && (
+                      <span className="text-amber-800 font-bold text-xs ml-2">
+                        • Vendor: {vendors.find((v) => v.id === selectedVendorId)?.name}
+                      </span>
+                    )}
+                    {selectedWorkerId !== "ALL" && (
+                      <span className="text-blue-800 font-bold text-xs ml-2">
+                        • Worker: {workers.find((w) => w.id === selectedWorkerId)?.name}
+                      </span>
+                    )}
+                  </span>
+                )}
                 {activeReport === "VENDOR_LEDGER" &&
                   (selectedVendorId === "ALL"
                     ? "Vendor Statement of Account & Payables Ledger (All Vendors)"

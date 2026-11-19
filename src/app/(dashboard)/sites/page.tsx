@@ -172,7 +172,14 @@ export default function SitesPage() {
   const [statementPage, setStatementPage] = useState(1);
   const [statementPageSize, setStatementPageSize] = useState(10);
   const [statementTypeFilter, setStatementTypeFilter] = useState<string>("ALL");
+  const [statementVendorFilter, setStatementVendorFilter] = useState<string>("ALL");
+  const [statementWorkerFilter, setStatementWorkerFilter] = useState<string>("ALL");
   const [statementSearch, setStatementSearch] = useState("");
+
+  useEffect(() => {
+    setStatementVendorFilter("ALL");
+    setStatementWorkerFilter("ALL");
+  }, [selectedSiteId]);
 
   const [generatedDate, setGeneratedDate] = useState("");
   useEffect(() => {
@@ -310,6 +317,8 @@ export default function SitesPage() {
     isInflow: boolean;
     rawCreatedAt?: string;
     rawRecord?: any;
+    vendorId?: string;
+    workerId?: string;
   }
 
   // Combined all transactions sorted DATE-WISE (LATEST IN FIRST)
@@ -334,6 +343,7 @@ export default function SitesPage() {
         isInflow: false,
         rawCreatedAt: p.createdAt,
         rawRecord: p,
+        vendorId: p.vendorId,
       });
     });
 
@@ -353,6 +363,7 @@ export default function SitesPage() {
         isInflow: false,
         rawCreatedAt: w.createdAt,
         rawRecord: w,
+        workerId: w.workerId,
       });
     });
 
@@ -397,6 +408,8 @@ export default function SitesPage() {
         isInflow: false,
         rawCreatedAt: e.createdAt,
         rawRecord: e,
+        vendorId: (e as any).vendorId,
+        workerId: (e as any).workerId,
       });
     });
 
@@ -575,11 +588,20 @@ export default function SitesPage() {
     setDeletingLedgerEntry(null);
   };
 
-  // Filtered entries by category and search term
+  // Filtered entries by category, vendor, worker, and search term
   const filteredStatementEntries = useMemo(() => {
     let list = allSiteLedgerEntries;
     if (statementTypeFilter !== "ALL") {
       list = list.filter((e) => e.type === statementTypeFilter);
+    }
+    if (statementVendorFilter !== "ALL" && statementWorkerFilter !== "ALL") {
+      list = list.filter(
+        (e) => e.vendorId === statementVendorFilter || e.workerId === statementWorkerFilter
+      );
+    } else if (statementVendorFilter !== "ALL") {
+      list = list.filter((e) => e.vendorId === statementVendorFilter);
+    } else if (statementWorkerFilter !== "ALL") {
+      list = list.filter((e) => e.workerId === statementWorkerFilter);
     }
     if (statementSearch.trim()) {
       const q = statementSearch.toLowerCase().trim();
@@ -593,12 +615,21 @@ export default function SitesPage() {
       );
     }
     return list;
-  }, [allSiteLedgerEntries, statementTypeFilter, statementSearch]);
+  }, [
+    allSiteLedgerEntries,
+    statementTypeFilter,
+    statementVendorFilter,
+    statementWorkerFilter,
+    statementSearch,
+  ]);
 
   // Paginated entries for the unified table
   const paginatedStatementEntries = useMemo(() => {
-    const start = (statementPage - 1) * statementPageSize;
-    return filteredStatementEntries.slice(start, start + statementPageSize);
+    const size = Math.max(1, Number(statementPageSize) || 10);
+    const totalPages = Math.max(1, Math.ceil(filteredStatementEntries.length / size));
+    const safePage = Math.min(Math.max(1, statementPage), totalPages);
+    const start = (safePage - 1) * size;
+    return filteredStatementEntries.slice(start, start + size);
   }, [filteredStatementEntries, statementPage, statementPageSize]);
 
   // Date-filtered totals for active statement period
@@ -626,7 +657,15 @@ export default function SitesPage() {
   // Reset pagination when site or filters change
   useEffect(() => {
     setStatementPage(1);
-  }, [selectedSiteId, statementTypeFilter, statementSearch, startDate, endDate]);
+  }, [
+    selectedSiteId,
+    statementTypeFilter,
+    statementVendorFilter,
+    statementWorkerFilter,
+    statementSearch,
+    startDate,
+    endDate,
+  ]);
 
   const triggerSiteAction = (
     siteId: string,
@@ -1268,94 +1307,192 @@ export default function SitesPage() {
               </div>
             </div>
 
-            {/* ── Filter Pills & Search ── */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:hidden">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatementTypeFilter("ALL");
-                    setStatementPage(1);
-                  }}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                    statementTypeFilter === "ALL"
-                      ? "bg-slate-900 text-white shadow-xs font-bold"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  All ({allSiteLedgerEntries.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatementTypeFilter("MATERIAL");
-                    setStatementPage(1);
-                  }}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                    statementTypeFilter === "MATERIAL"
-                      ? "bg-amber-600 text-white shadow-xs font-bold"
-                      : "bg-amber-50 text-amber-800 border border-amber-200/60 hover:bg-amber-100"
-                  }`}
-                >
-                  📦 Materials ({allSitePurchases.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatementTypeFilter("LABOR");
-                    setStatementPage(1);
-                  }}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                    statementTypeFilter === "LABOR"
-                      ? "bg-blue-600 text-white shadow-xs font-bold"
-                      : "bg-blue-50 text-blue-800 border border-blue-200/60 hover:bg-blue-100"
-                  }`}
-                >
-                  👷 Wages ({allSiteWorkLogs.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatementTypeFilter("EXPENSE");
-                    setStatementPage(1);
-                  }}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                    statementTypeFilter === "EXPENSE"
-                      ? "bg-purple-600 text-white shadow-xs font-bold"
-                      : "bg-purple-50 text-purple-800 border border-purple-200/60 hover:bg-purple-100"
-                  }`}
-                >
-                  ⛽ Expenses ({allSiteMiscExpenses.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatementTypeFilter("INCOME");
-                    setStatementPage(1);
-                  }}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                    statementTypeFilter === "INCOME"
-                      ? "bg-emerald-600 text-white shadow-xs font-bold"
-                      : "bg-emerald-50 text-emerald-800 border border-emerald-200/60 hover:bg-emerald-100"
-                  }`}
-                >
-                  💰 Inflows ({allSiteIncomes.length})
-                </button>
+            {/* ── Filter Pills, Vendor & Worker Filters, and Search ── */}
+            <div className="space-y-2.5 print:hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatementTypeFilter("ALL");
+                      setStatementPage(1);
+                    }}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                      statementTypeFilter === "ALL"
+                        ? "bg-slate-900 text-white shadow-xs font-bold"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    All ({allSiteLedgerEntries.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatementTypeFilter("MATERIAL");
+                      setStatementPage(1);
+                    }}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                      statementTypeFilter === "MATERIAL"
+                        ? "bg-amber-600 text-white shadow-xs font-bold"
+                        : "bg-amber-50 text-amber-800 border border-amber-200/60 hover:bg-amber-100"
+                    }`}
+                  >
+                    📦 Materials ({allSitePurchases.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatementTypeFilter("LABOR");
+                      setStatementPage(1);
+                    }}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                      statementTypeFilter === "LABOR"
+                        ? "bg-blue-600 text-white shadow-xs font-bold"
+                        : "bg-blue-50 text-blue-800 border border-blue-200/60 hover:bg-blue-100"
+                    }`}
+                  >
+                    👷 Wages ({allSiteWorkLogs.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatementTypeFilter("EXPENSE");
+                      setStatementPage(1);
+                    }}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                      statementTypeFilter === "EXPENSE"
+                        ? "bg-purple-600 text-white shadow-xs font-bold"
+                        : "bg-purple-50 text-purple-800 border border-purple-200/60 hover:bg-purple-100"
+                    }`}
+                  >
+                    ⛽ Expenses ({allSiteMiscExpenses.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatementTypeFilter("INCOME");
+                      setStatementPage(1);
+                    }}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                      statementTypeFilter === "INCOME"
+                        ? "bg-emerald-600 text-white shadow-xs font-bold"
+                        : "bg-emerald-50 text-emerald-800 border border-emerald-200/60 hover:bg-emerald-100"
+                    }`}
+                  >
+                    💰 Inflows ({allSiteIncomes.length})
+                  </button>
+                </div>
+
+                {/* In-table Search */}
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search in site statement..."
+                    value={statementSearch}
+                    onChange={(e) => {
+                      setStatementSearch(e.target.value);
+                      setStatementPage(1);
+                    }}
+                    className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
               </div>
 
-              {/* In-table Search */}
-              <div className="relative w-full sm:w-64">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search in site statement..."
-                  value={statementSearch}
-                  onChange={(e) => {
-                    setStatementSearch(e.target.value);
-                    setStatementPage(1);
-                  }}
-                  className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-amber-500"
-                />
+              {/* ── Sub-Filters: Vendor Filter & Worker Filter ── */}
+              <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-slate-100 text-xs">
+                <span className="font-bold text-slate-500 font-mono text-[11px] uppercase tracking-wide flex items-center gap-1">
+                  <Filter className="h-3 w-3 text-amber-600" />
+                  Filters:
+                </span>
+
+                {/* Vendor Filter Dropdown */}
+                <div className="flex items-center gap-1.5 bg-amber-50/80 border border-amber-200 rounded-lg px-2.5 py-1">
+                  <Truck className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                  <span className="text-amber-800 font-semibold text-[11px]">Vendor:</span>
+                  <select
+                    value={statementVendorFilter}
+                    onChange={(e) => {
+                      setStatementVendorFilter(e.target.value);
+                      setStatementPage(1);
+                    }}
+                    className="bg-transparent text-xs font-bold text-amber-950 focus:outline-none cursor-pointer pr-1"
+                  >
+                    <option value="ALL">All Vendors ({vendors.length})</option>
+                    {vendors.map((v) => {
+                      const count = allSitePurchases.filter((p) => p.vendorId === v.id).length;
+                      return (
+                        <option key={v.id} value={v.id}>
+                          {v.name} ({v.tradeCategory}){count > 0 ? ` • ${count} bills` : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {statementVendorFilter !== "ALL" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStatementVendorFilter("ALL");
+                        setStatementPage(1);
+                      }}
+                      className="ml-1 text-slate-400 hover:text-rose-600 font-bold text-[10px]"
+                      title="Clear vendor filter"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Worker Filter Dropdown */}
+                <div className="flex items-center gap-1.5 bg-blue-50/80 border border-blue-200 rounded-lg px-2.5 py-1">
+                  <Users className="h-3.5 w-3.5 text-blue-700 shrink-0" />
+                  <span className="text-blue-800 font-semibold text-[11px]">Worker:</span>
+                  <select
+                    value={statementWorkerFilter}
+                    onChange={(e) => {
+                      setStatementWorkerFilter(e.target.value);
+                      setStatementPage(1);
+                    }}
+                    className="bg-transparent text-xs font-bold text-blue-950 focus:outline-none cursor-pointer pr-1"
+                  >
+                    <option value="ALL">All Workers ({workers.length})</option>
+                    {workers.map((w) => {
+                      const count = allSiteWorkLogs.filter((l) => l.workerId === w.id).length;
+                      return (
+                        <option key={w.id} value={w.id}>
+                          {w.name} ({w.trade}){count > 0 ? ` • ${count} logs` : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {statementWorkerFilter !== "ALL" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStatementWorkerFilter("ALL");
+                        setStatementPage(1);
+                      }}
+                      className="ml-1 text-slate-400 hover:text-rose-600 font-bold text-[10px]"
+                      title="Clear worker filter"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {(statementVendorFilter !== "ALL" || statementWorkerFilter !== "ALL") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatementVendorFilter("ALL");
+                      setStatementWorkerFilter("ALL");
+                      setStatementPage(1);
+                    }}
+                    className="text-[11px] text-rose-600 hover:text-rose-800 hover:underline font-semibold ml-1 cursor-pointer"
+                  >
+                    Reset Filters
+                  </button>
+                )}
               </div>
             </div>
 
