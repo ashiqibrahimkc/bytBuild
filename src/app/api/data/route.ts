@@ -172,13 +172,38 @@ function serializeUser(u: any) {
 }
 
 function serializeRole(r: any) {
+  let displayName = r.name;
+  let description = r.description || "";
+
+  if (r.name === "OWNER") {
+    displayName = "Company Owner";
+  } else if (r.name === "MANAGER") {
+    displayName = "Site Project Manager";
+  } else if (r.name === "ACCOUNTANT") {
+    displayName = "Head Accountant";
+  } else if (r.description) {
+    try {
+      if (typeof r.description === "string" && r.description.startsWith("{") && r.description.endsWith("}")) {
+        const parsed = JSON.parse(r.description);
+        displayName = parsed.display || parsed.displayName || r.name;
+        description = parsed.desc || parsed.description || "";
+      } else {
+        displayName = r.name.split("_").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+      }
+    } catch {
+      displayName = r.name.split("_").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+    }
+  } else {
+    displayName = r.name.split("_").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+  }
+
   return {
     id: r.id,
     name: r.name,
-    displayName: r.name === "OWNER" ? "Company Owner" : r.name === "MANAGER" ? "Site Project Manager" : "Head Accountant",
-    description: r.description || "",
-    permissions: r.permissions,
-    isSystem: r.isSystem,
+    displayName,
+    description,
+    permissions: r.permissions || [],
+    isSystem: Boolean(r.isSystem),
     createdAt: r.createdAt.toISOString().slice(0, 10),
   };
 }
@@ -667,6 +692,58 @@ export async function POST(request: NextRequest) {
       }
 
       // ── Roles ──
+      case "ADD_ROLE": {
+        const roleName = String(payload.name || "").trim().toUpperCase().replace(/\s+/g, "_");
+        if (!roleName) {
+          return NextResponse.json({ success: false, error: "Role name is required" }, { status: 400 });
+        }
+
+        const existing = await prisma.customRole.findUnique({ where: { name: roleName } });
+        if (existing) {
+          return NextResponse.json(
+            { success: false, error: `Role code "${roleName}" already exists.` },
+            { status: 400 }
+          );
+        }
+
+        const descPayload = JSON.stringify({
+          display: payload.displayName || payload.name,
+          desc: payload.description || "",
+        });
+
+        const created = await prisma.customRole.create({
+          data: {
+            name: roleName,
+            description: descPayload,
+            permissions: Array.isArray(payload.permissions) ? payload.permissions : [],
+            isSystem: false,
+          },
+        });
+        return NextResponse.json({ success: true, item: serializeRole(created) });
+      }
+
+      case "DELETE_ROLE": {
+        const target = await prisma.customRole.findUnique({ where: { id: payload.id } });
+        if (!target) {
+          return NextResponse.json({ success: false, error: "Role not found" }, { status: 404 });
+        }
+        if (target.isSystem) {
+          return NextResponse.json({ success: false, error: "System roles cannot be deleted." }, { status: 400 });
+        }
+        const userCount = await prisma.appUser.count({ where: { roleId: payload.id } });
+        if (userCount > 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Cannot delete role. There are ${userCount} user account(s) assigned to this role.`,
+            },
+            { status: 400 }
+          );
+        }
+        await prisma.customRole.delete({ where: { id: payload.id } });
+        return NextResponse.json({ success: true, id: payload.id });
+      }
+
       case "UPDATE_ROLE_PERMS": {
         const updated = await prisma.customRole.update({
           where: { id: payload.roleId },

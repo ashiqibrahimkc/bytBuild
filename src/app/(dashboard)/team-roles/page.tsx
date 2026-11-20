@@ -57,6 +57,7 @@ export default function TeamRolesPage() {
     roles,
     users,
     createCustomRole,
+    deleteCustomRole,
     updateRolePermissions,
     createAppUser,
     deleteAppUser,
@@ -85,6 +86,8 @@ export default function TeamRolesPage() {
     "sites",
     "vendors",
   ]);
+  const [roleError, setRoleError] = useState<string | null>(null);
+  const [isSubmittingRole, setIsSubmittingRole] = useState(false);
 
   // New User Modal
   const [isNewUserOpen, setIsNewUserOpen] = useState(false);
@@ -94,6 +97,27 @@ export default function TeamRolesPage() {
   const [newRoleId, setNewRoleId] = useState(roles[1]?.id || roles[0]?.id || "");
   const [showPassword, setShowPassword] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
+
+  // Keep selectedRoleId, newRoleId, and editPermissions synced with live database roles
+  React.useEffect(() => {
+    if (roles.length > 0) {
+      if (!selectedRoleId || !roles.some((r) => r.id === selectedRoleId)) {
+        setSelectedRoleId(roles[0].id);
+      }
+      if (!newRoleId || !roles.some((r) => r.id === newRoleId)) {
+        setNewRoleId(roles[1]?.id || roles[0]?.id || "");
+      }
+      setEditPermissions((prev) => {
+        const map = { ...prev };
+        roles.forEach((r) => {
+          if (!map[r.id]) {
+            map[r.id] = [...r.permissions];
+          }
+        });
+        return map;
+      });
+    }
+  }, [roles, selectedRoleId, newRoleId]);
 
   if (isDbLoading) {
     return <TeamRolesSkeleton />;
@@ -142,23 +166,47 @@ export default function TeamRolesPage() {
     setTimeout(() => setSaveSuccess(false), 2500);
   };
 
-  const handleCreateRoleSubmit = (e: React.FormEvent) => {
+  const handleCreateRoleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRoleError(null);
     if (!newRoleName || !newRoleDisplay) return;
 
-    createCustomRole({
-      name: newRoleName.toUpperCase().replace(/\s+/g, "_"),
-      displayName: newRoleDisplay,
-      description: newRoleDesc || `Custom role with ${newRolePermissions.length} accessible pages`,
-      permissions: newRolePermissions,
-      isSystem: false,
-    });
+    setIsSubmittingRole(true);
+    try {
+      const ok = await createCustomRole({
+        name: newRoleName.toUpperCase().replace(/\s+/g, "_"),
+        displayName: newRoleDisplay,
+        description: newRoleDesc || `Custom role with ${newRolePermissions.length} accessible pages`,
+        permissions: newRolePermissions,
+        isSystem: false,
+      });
 
-    setNewRoleName("");
-    setNewRoleDisplay("");
-    setNewRoleDesc("");
-    setNewRolePermissions(["dashboard", "sites"]);
-    setIsNewRoleOpen(false);
+      if (ok === false) {
+        setRoleError(`Failed to create role. The code "${newRoleName.toUpperCase().replace(/\s+/g, "_")}" may already exist.`);
+        return;
+      }
+
+      setNewRoleName("");
+      setNewRoleDisplay("");
+      setNewRoleDesc("");
+      setNewRolePermissions(["dashboard", "sites"]);
+      setIsNewRoleOpen(false);
+    } finally {
+      setIsSubmittingRole(false);
+    }
+  };
+
+  const handleDeleteRole = async (roleId: string, roleName: string) => {
+    if (confirm(`Are you sure you want to delete the custom role "${roleName}"?`)) {
+      const ok = await deleteCustomRole?.(roleId);
+      if (ok === false) {
+        alert("Cannot delete role. There may be users assigned to this role.");
+      } else {
+        if (selectedRoleId === roleId) {
+          setSelectedRoleId(roles[0]?.id || "");
+        }
+      }
+    }
   };
 
   const handleCreateUserSubmit = (e: React.FormEvent) => {
@@ -274,9 +322,24 @@ export default function TeamRolesPage() {
                         @{r.name}
                       </span>
                     </div>
-                    <Badge variant={r.name === "OWNER" ? "warning" : "secondary"} className="text-[10px]">
-                      {perms.length} Pages Visible
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={r.name === "OWNER" ? "warning" : "secondary"} className="text-[10px]">
+                        {perms.length} Pages Visible
+                      </Badge>
+                      {!r.isSystem && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteRole(r.id, r.displayName);
+                          }}
+                          className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer"
+                          title="Delete custom role"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <p className="text-xs text-slate-500 mt-2 line-clamp-2">
                     {r.description}
@@ -487,6 +550,12 @@ export default function TeamRolesPage() {
         description="Define a new role and customize exactly which pages this role can access."
       >
         <form onSubmit={handleCreateRoleSubmit} className="space-y-4">
+          {roleError && (
+            <div className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700 border border-rose-200">
+              {roleError}
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Role Display Name *
@@ -558,10 +627,12 @@ export default function TeamRolesPage() {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setIsNewRoleOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsNewRoleOpen(false)} disabled={isSubmittingRole}>
               Cancel
             </Button>
-            <Button type="submit">Create Role</Button>
+            <Button type="submit" disabled={isSubmittingRole}>
+              {isSubmittingRole ? "Creating..." : "Create Role"}
+            </Button>
           </div>
         </form>
       </Modal>

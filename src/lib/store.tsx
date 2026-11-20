@@ -65,7 +65,8 @@ interface ConstructionContextType {
 
   // RBAC Permission Checker
   canAccessPage: (permission: PagePermission) => boolean;
-  createCustomRole: (role: Omit<CustomRole, "id" | "createdAt">) => void;
+  createCustomRole: (role: Omit<CustomRole, "id" | "createdAt">) => Promise<boolean> | void;
+  deleteCustomRole: (roleId: string) => Promise<boolean>;
   updateRolePermissions: (roleId: string, permissions: PagePermission[]) => void;
   createAppUser: (user: Omit<AppUser, "id" | "createdAt">) => boolean;
   deleteAppUser: (userId: string) => void;
@@ -150,7 +151,7 @@ const ConstructionContext = createContext<ConstructionContextType | undefined>(u
 // ─── Initial Roles & Permissions ──────────────────────────────────────────
 const INITIAL_ROLES: CustomRole[] = [
   {
-    id: "role-owner",
+    id: "ce073f91-6db6-42cb-b973-9e0e230d31df",
     name: "OWNER",
     displayName: "Company Owner",
     description: "Full financial authority, cash flow in hand, audit logs, and user role administration.",
@@ -171,7 +172,7 @@ const INITIAL_ROLES: CustomRole[] = [
     createdAt: "2026-11-14",
   },
   {
-    id: "role-manager",
+    id: "66858840-41bf-4858-a38b-69d7126d5fc3",
     name: "MANAGER",
     displayName: "Site Project Manager",
     description: "Field supervisor: logs site materials, worker attendance, and day-to-day site progress.",
@@ -180,7 +181,7 @@ const INITIAL_ROLES: CustomRole[] = [
     createdAt: "2026-11-14",
   },
   {
-    id: "role-accountant",
+    id: "afdc7a60-c3d6-44fb-b2d7-66f5cff7789d",
     name: "ACCOUNTANT",
     displayName: "Head Accountant",
     description: "Finance role: manages vendor credits, worker salary disbursements, overhead, and cash flow ledger.",
@@ -419,19 +420,42 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
   );
 
   // ─── Role & User Management ─────────────────────────────────────────────
-  const createCustomRole = (roleData: Omit<CustomRole, "id" | "createdAt">) => {
+  const createCustomRole = async (roleData: Omit<CustomRole, "id" | "createdAt">): Promise<boolean> => {
+    const tempId = `role-${Date.now()}`;
     const newRole: CustomRole = {
       ...roleData,
-      id: `role-${Date.now()}`,
+      id: tempId,
       createdAt: new Date().toISOString().split("T")[0],
     };
     setRoles((prev) => [...prev, newRole]);
-    logAudit(
-      "CREATE_ROLE",
-      "CustomRole",
-      newRole.id,
-      `Created role "${newRole.displayName}" with permissions: [${newRole.permissions.join(", ")}]`
-    );
+
+    const res = await apiMutation("ADD_ROLE", roleData);
+    if (res?.success && res.item) {
+      setRoles((prev) => prev.map((r) => (r.id === tempId ? res.item : r)));
+      logAudit(
+        "CREATE_ROLE",
+        "CustomRole",
+        res.item.id,
+        `Created role "${res.item.displayName}" with permissions: [${res.item.permissions.join(", ")}]`
+      );
+      return true;
+    } else {
+      setRoles((prev) => prev.filter((r) => r.id !== tempId));
+      return false;
+    }
+  };
+
+  const deleteCustomRole = async (roleId: string): Promise<boolean> => {
+    const targetRole = roles.find((r) => r.id === roleId);
+    if (!targetRole || targetRole.isSystem) return false;
+
+    const res = await apiMutation("DELETE_ROLE", { id: roleId });
+    if (res?.success) {
+      setRoles((prev) => prev.filter((r) => r.id !== roleId));
+      logAudit("DELETE_ROLE", "CustomRole", roleId, `Deleted role "${targetRole.displayName}"`);
+      return true;
+    }
+    return false;
   };
 
   const updateRolePermissions = (roleId: string, permissions: PagePermission[]) => {
@@ -467,6 +491,8 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
     apiMutation("ADD_USER", userData).then((res) => {
       if (res?.success && res.item) {
         setUsers((prev) => prev.map((u) => (u.id === tempId ? res.item : u)));
+      } else {
+        setUsers((prev) => prev.filter((u) => u.id !== tempId));
       }
     });
 
@@ -1676,6 +1702,7 @@ export function ConstructionProvider({ children }: { children: React.ReactNode }
         getWorkerMonthlySalaryInfo,
         canAccessPage,
         createCustomRole,
+        deleteCustomRole,
         updateRolePermissions,
         createAppUser,
         deleteAppUser,
