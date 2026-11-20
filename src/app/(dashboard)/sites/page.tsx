@@ -503,7 +503,16 @@ export default function SitesPage() {
     } else if (entry.type === "LABOR") {
       setEditEntryWorkerId(entry.rawRecord?.workerId || workers[0]?.id || "");
     } else if (entry.type === "EXPENSE") {
-      setEditEntryCategory(entry.rawRecord?.category || "MISCELLANEOUS");
+      const rawCat = entry.rawRecord?.category;
+      const normalizedCat: ExpenseCategory =
+        rawCat === "FUEL_TRAVEL"
+          ? "PETROL_FUEL"
+          : rawCat === "TEA_REFRESHMENTS"
+          ? "FOOD_TEA_REFRESHMENTS"
+          : rawCat === "EQUIPMENT_RENT"
+          ? "MACHINERY_RENT"
+          : (rawCat || "MISCELLANEOUS");
+      setEditEntryCategory(normalizedCat);
       setEditEntryPaymentMode(entry.rawRecord?.paymentMode || "CASH");
     } else if (entry.type === "INCOME") {
       setEditEntryReceivedFrom(entry.rawRecord?.receivedFrom || "");

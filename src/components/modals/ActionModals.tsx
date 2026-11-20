@@ -110,12 +110,23 @@ export function ActionModals({
 
   // 6. Company Expense State
   const [expenseSiteId, setExpenseSiteId] = useState<string>(defaultSiteId || "");
-  const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>("FUEL_TRAVEL");
+  const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>("OUTSIDE_LABOR");
   const [expenseDate, setExpenseDate] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseMode, setExpenseMode] = useState<PaymentMode>("CASH");
   const [expenseVoucher, setExpenseVoucher] = useState("");
   const [expenseNotes, setExpenseNotes] = useState("");
+
+  React.useEffect(() => {
+    if (isOpenExpense) {
+      setExpenseCategory("OUTSIDE_LABOR");
+      setExpenseAmount("");
+      setExpenseVoucher("");
+      setExpenseNotes("");
+      setExpenseMode("CASH");
+      setExpenseDate(new Date().toISOString().split("T")[0]);
+    }
+  }, [isOpenExpense]);
 
   React.useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
@@ -279,6 +290,7 @@ export function ActionModals({
     setExpenseVoucher("");
     setExpenseNotes("");
     setExpenseDate(getTodayDate());
+    setExpenseCategory("OUTSIDE_LABOR");
     onCloseExpense();
   };
 
