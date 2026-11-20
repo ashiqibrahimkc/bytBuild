@@ -89,6 +89,15 @@ export default function TeamRolesPage() {
   const [roleError, setRoleError] = useState<string | null>(null);
   const [isSubmittingRole, setIsSubmittingRole] = useState(false);
 
+  // Delete Custom Role Modal state
+  const [deleteTargetRole, setDeleteTargetRole] = useState<{ id: string; displayName: string; name: string } | null>(null);
+  const [deleteRoleError, setDeleteRoleError] = useState<string | null>(null);
+  const [isDeletingRole, setIsDeletingRole] = useState(false);
+
+  // Delete User Modal state
+  const [deleteTargetUser, setDeleteTargetUser] = useState<AppUser | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+
   // New User Modal
   const [isNewUserOpen, setIsNewUserOpen] = useState(false);
   const [newFullName, setNewFullName] = useState("");
@@ -196,16 +205,34 @@ export default function TeamRolesPage() {
     }
   };
 
-  const handleDeleteRole = async (roleId: string, roleName: string) => {
-    if (confirm(`Are you sure you want to delete the custom role "${roleName}"?`)) {
-      const ok = await deleteCustomRole?.(roleId);
+  const handleConfirmDeleteRole = async () => {
+    if (!deleteTargetRole) return;
+
+    // Check if any users are assigned
+    const assignedUsers = users.filter((u) => u.roleId === deleteTargetRole.id);
+    if (assignedUsers.length > 0) {
+      setDeleteRoleError(
+        `Cannot delete role "${deleteTargetRole.displayName}". There are ${assignedUsers.length} user account(s) currently assigned to this role. Please reassign or delete these users first.`
+      );
+      return;
+    }
+
+    setIsDeletingRole(true);
+    setDeleteRoleError(null);
+    try {
+      const ok = await deleteCustomRole?.(deleteTargetRole.id);
       if (ok === false) {
-        alert("Cannot delete role. There may be users assigned to this role.");
-      } else {
-        if (selectedRoleId === roleId) {
-          setSelectedRoleId(roles[0]?.id || "");
-        }
+        setDeleteRoleError("Failed to delete role. It may be a system role or have associated users.");
+        return;
       }
+      if (selectedRoleId === deleteTargetRole.id) {
+        setSelectedRoleId(roles[0]?.id || "");
+      }
+      setDeleteTargetRole(null);
+    } catch (err: any) {
+      setDeleteRoleError(err?.message || "An unexpected error occurred while deleting the role.");
+    } finally {
+      setIsDeletingRole(false);
     }
   };
 
@@ -331,7 +358,8 @@ export default function TeamRolesPage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteRole(r.id, r.displayName);
+                            setDeleteTargetRole({ id: r.id, displayName: r.displayName, name: r.name });
+                            setDeleteRoleError(null);
                           }}
                           className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer"
                           title="Delete custom role"
@@ -523,7 +551,7 @@ export default function TeamRolesPage() {
                           <td className="py-3 px-4 text-right">
                             {!isOwner && (
                               <button
-                                onClick={() => deleteAppUser(u.id)}
+                                onClick={() => setDeleteTargetUser(u)}
                                 className="rounded p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer"
                                 title="Remove user account"
                               >
@@ -726,6 +754,150 @@ export default function TeamRolesPage() {
             <Button type="submit">Create User Account</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* ─── MODAL: DELETE CUSTOM ROLE CONFIRMATION ──────────────────────── */}
+      <Modal
+        isOpen={!!deleteTargetRole}
+        onClose={() => {
+          if (!isDeletingRole) {
+            setDeleteTargetRole(null);
+            setDeleteRoleError(null);
+          }
+        }}
+        title="Delete Custom Role"
+        description="Permanently remove this custom RBAC role"
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3.5 rounded-xl bg-rose-50 border border-rose-200 p-4 text-rose-950">
+            <div className="rounded-lg bg-rose-100 p-2.5 text-rose-600 shrink-0">
+              <Trash2 className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-rose-900">
+                Are you sure you want to delete this role?
+              </h4>
+              <p className="text-xs text-rose-700 leading-relaxed">
+                You are about to delete the custom role{" "}
+                <strong className="font-extrabold text-rose-950">
+                  &quot;{deleteTargetRole?.displayName}&quot;
+                </strong>{" "}
+                <span className="font-mono text-[11px] text-rose-800">
+                  (@{deleteTargetRole?.name})
+                </span>. This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          {/* Warning if users are currently assigned to this role */}
+          {deleteTargetRole && (() => {
+            const assignedCount = users.filter((u) => u.roleId === deleteTargetRole.id).length;
+            if (assignedCount > 0) {
+              return (
+                <div className="flex items-start gap-2.5 rounded-lg bg-amber-50 border border-amber-200 p-3 text-amber-900 text-xs">
+                  <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold block">Active Users Assigned ({assignedCount})</span>
+                    There are {assignedCount} user account(s) currently using this role. You must reassign or remove those users before deleting this role.
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
+          {deleteRoleError && (
+            <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-700 font-medium">
+              {deleteRoleError}
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isDeletingRole}
+              onClick={() => {
+                setDeleteTargetRole(null);
+                setDeleteRoleError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={
+                isDeletingRole ||
+                (deleteTargetRole ? users.some((u) => u.roleId === deleteTargetRole.id) : false)
+              }
+              onClick={handleConfirmDeleteRole}
+              className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {isDeletingRole ? "Deleting Role..." : "Delete Role"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ─── MODAL: DELETE USER CONFIRMATION ─────────────────────────────── */}
+      <Modal
+        isOpen={!!deleteTargetUser}
+        onClose={() => {
+          if (!isDeletingUser) setDeleteTargetUser(null);
+        }}
+        title="Remove User Account"
+        description="Permanently revoke access for this team member"
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3.5 rounded-xl bg-rose-50 border border-rose-200 p-4 text-rose-950">
+            <div className="rounded-lg bg-rose-100 p-2.5 text-rose-600 shrink-0">
+              <Trash2 className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-rose-900">
+                Are you sure you want to delete this user account?
+              </h4>
+              <p className="text-xs text-rose-700 leading-relaxed">
+                User <strong className="font-extrabold text-rose-950">{deleteTargetUser?.fullName}</strong>{" "}
+                (<span className="font-mono text-[11px] text-rose-800">@{deleteTargetUser?.username}</span>) will immediately lose all access to the system.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isDeletingUser}
+              onClick={() => setDeleteTargetUser(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={isDeletingUser}
+              onClick={async () => {
+                if (!deleteTargetUser) return;
+                setIsDeletingUser(true);
+                try {
+                  deleteAppUser(deleteTargetUser.id);
+                  setDeleteTargetUser(null);
+                } finally {
+                  setIsDeletingUser(false);
+                }
+              }}
+              className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {isDeletingUser ? "Removing User..." : "Remove User"}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

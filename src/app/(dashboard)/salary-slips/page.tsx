@@ -168,6 +168,7 @@ function SalarySlipsContent() {
   // Modal States
   const [generatingWorker, setGeneratingWorker] = useState<Worker | null>(null);
   const [viewingSlip, setViewingSlip] = useState<SalarySlip | null>(null);
+  const [deletingSlip, setDeletingSlip] = useState<SalarySlip | null>(null);
 
   // Slip Form Inputs
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("CASH");
@@ -736,16 +737,8 @@ function SalarySlipsContent() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => {
-                                  if (
-                                    confirm(
-                                      `Are you sure you want to delete slip #${slip.slipNumber}? This will remove the pay slip record.`
-                                    )
-                                  ) {
-                                    deleteSalarySlip(slip.id);
-                                  }
-                                }}
-                                className="h-7 text-xs text-rose-600 hover:bg-rose-50 hover:border-rose-300"
+                                onClick={() => setDeletingSlip(slip)}
+                                className="h-7 text-xs text-rose-600 hover:bg-rose-50 hover:border-rose-300 cursor-pointer"
                                 title="Delete Slip"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -762,6 +755,58 @@ function SalarySlipsContent() {
           </Card>
         )}
       </div>
+
+      {/* ── MODAL: DELETE SALARY SLIP CONFIRMATION ──────────────────────────── */}
+      {deletingSlip && (
+        <Modal
+          isOpen={!!deletingSlip}
+          onClose={() => setDeletingSlip(null)}
+          title="Delete Salary Slip"
+          description="Remove generated payroll record"
+          maxWidth="md"
+        >
+          <div className="space-y-4 py-2">
+            <div className="flex items-start gap-3 rounded-xl bg-rose-50 border border-rose-200 p-4 text-rose-950">
+              <div className="rounded-lg bg-rose-100 p-2.5 text-rose-600 shrink-0">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-rose-900">
+                  Delete Pay Slip #{deletingSlip.slipNumber}?
+                </h4>
+                <p className="text-xs text-rose-700 leading-relaxed">
+                  Are you sure you want to delete slip <strong className="font-bold text-rose-950">#{deletingSlip.slipNumber}</strong> for{" "}
+                  <strong className="font-bold text-rose-950">{deletingSlip.workerName}</strong> ({formatCurrency(deletingSlip.netPayableAmount)})? This will remove the salary slip record.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeletingSlip(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  deleteSalarySlip(deletingSlip.id);
+                  setDeletingSlip(null);
+                }}
+                className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete Pay Slip
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* ── MODAL 1: GENERATE SALARY SLIP ──────────────────────────────────── */}
       {generatingWorker && (
