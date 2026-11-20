@@ -23,7 +23,7 @@ import {
   AlertTriangle,
   Printer,
 } from "lucide-react";
-import { Vendor } from "@/lib/types";
+import { Vendor, VendorPurchase } from "@/lib/types";
 import { useConstruction } from "@/lib/store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -47,11 +47,53 @@ export default function VendorsPage() {
     addVendor,
     updateVendor,
     deleteVendor,
+    updateVendorPurchase,
+    deleteVendorPurchase,
   } = useConstruction();
 
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
   const [generatedDate, setGeneratedDate] = useState("");
+
+  // Edit & Delete Vendor Purchase Bill State
+  const [editingPurchase, setEditingPurchase] = useState<VendorPurchase | null>(null);
+  const [editPurchaseDate, setEditPurchaseDate] = useState("");
+  const [editPurchaseSiteId, setEditPurchaseSiteId] = useState("");
+  const [editPurchaseAmount, setEditPurchaseAmount] = useState("");
+  const [editPurchaseVoucherNo, setEditPurchaseVoucherNo] = useState("");
+  const [editPurchaseNotes, setEditPurchaseNotes] = useState("");
+  const [deletingPurchase, setDeletingPurchase] = useState<VendorPurchase | null>(null);
+
+  const openEditPurchaseModal = (p: VendorPurchase) => {
+    setEditingPurchase(p);
+    setEditPurchaseDate(p.purchaseDate ? p.purchaseDate.split("T")[0] : "");
+    setEditPurchaseSiteId(p.siteId || "");
+    setEditPurchaseAmount(p.amount ? p.amount.toString() : "");
+    setEditPurchaseVoucherNo(p.voucherNo || "");
+    setEditPurchaseNotes(p.notes || "");
+  };
+
+  const handleUpdatePurchase = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPurchase) return;
+    const amountVal = parseFloat(editPurchaseAmount);
+    if (isNaN(amountVal) || amountVal <= 0) return;
+
+    updateVendorPurchase(editingPurchase.id, {
+      siteId: editPurchaseSiteId || undefined,
+      purchaseDate: editPurchaseDate ? new Date(editPurchaseDate).toISOString() : editingPurchase.purchaseDate,
+      amount: amountVal,
+      voucherNo: editPurchaseVoucherNo.trim(),
+      notes: editPurchaseNotes.trim(),
+    });
+    setEditingPurchase(null);
+  };
+
+  const handleExecuteDeletePurchase = () => {
+    if (!deletingPurchase) return;
+    deleteVendorPurchase(deletingPurchase.id);
+    setDeletingPurchase(null);
+  };
 
   useEffect(() => {
     setGeneratedDate(
@@ -997,11 +1039,29 @@ export default function VendorsPage() {
                           </div>
                           <div className="space-y-1 pt-1 border-t border-slate-200 max-h-28 overflow-y-auto pr-1">
                             {purchases.map((p) => (
-                              <div key={p.id} className="flex items-center justify-between text-[11px] font-mono">
+                              <div key={p.id} className="flex items-center justify-between text-[11px] font-mono group hover:bg-slate-100/70 p-1 rounded transition-colors">
                                 <span className="text-slate-500">
                                   {formatDate(p.purchaseDate)} {p.voucherNo ? `(Voucher #${p.voucherNo})` : ""}
                                 </span>
-                                <span className="font-semibold text-slate-800">{formatCurrency(p.amount)}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-semibold text-slate-800">{formatCurrency(p.amount)}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditPurchaseModal(p)}
+                                    className="p-1 text-slate-400 hover:text-amber-600 rounded hover:bg-amber-50 transition-colors"
+                                    title="Edit Purchase Bill"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeletingPurchase(p)}
+                                    className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors"
+                                    title="Delete Purchase Bill"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -1364,6 +1424,132 @@ export default function VendorsPage() {
           </Modal>
         );
       })()}
+
+      {/* Edit Purchase Bill Modal */}
+      <Modal
+        isOpen={!!editingPurchase}
+        onClose={() => setEditingPurchase(null)}
+        title="Edit Material Purchase Bill"
+        description="Update bill amount, voucher number, site allocation, or purchase date."
+      >
+        <form onSubmit={handleUpdatePurchase} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Purchase Date *</label>
+              <Input
+                type="date"
+                value={editPurchaseDate}
+                onChange={(e) => setEditPurchaseDate(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Amount (₹) *</label>
+              <Input
+                type="number"
+                step="any"
+                min="0.01"
+                placeholder="e.g. 5000"
+                value={editPurchaseAmount}
+                onChange={(e) => setEditPurchaseAmount(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Site Allocation</label>
+              <select
+                value={editPurchaseSiteId}
+                onChange={(e) => setEditPurchaseSiteId(e.target.value)}
+                className="w-full text-xs rounded-md border border-slate-300 p-2 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+                <option value="">General / Head Office</option>
+                {sites.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.clientName})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Voucher / Invoice #</label>
+              <Input
+                placeholder="e.g. INV-1049"
+                value={editPurchaseVoucherNo}
+                onChange={(e) => setEditPurchaseVoucherNo(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Notes / Description</label>
+            <Input
+              placeholder="e.g. 50 bags 53 grade cement delivery"
+              value={editPurchaseNotes}
+              onChange={(e) => setEditPurchaseNotes(e.target.value)}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setEditingPurchase(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Purchase Bill Modal */}
+      <Modal
+        isOpen={!!deletingPurchase}
+        onClose={() => setDeletingPurchase(null)}
+        title="Delete Material Purchase Bill"
+        description="Are you sure you want to permanently delete this material bill record?"
+      >
+        <div className="space-y-4">
+          <div className="rounded-xl bg-rose-50 border border-rose-200 p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-rose-900">
+                  Delete Bill: {deletingPurchase && formatCurrency(deletingPurchase.amount)}
+                </h4>
+                <p className="text-xs text-rose-700">
+                  Date: <strong>{deletingPurchase && formatDate(deletingPurchase.purchaseDate)}</strong>
+                  {deletingPurchase?.voucherNo && ` • Voucher #${deletingPurchase.voucherNo}`}
+                </p>
+                <p className="text-xs text-rose-700">
+                  Site: <strong>{sites.find((s) => s.id === deletingPurchase?.siteId)?.name || "General / Head Office"}</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-500">
+            This will permanently remove this material bill from the site ledger and adjust the vendor&apos;s outstanding balance. This action cannot be undone.
+          </p>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setDeletingPurchase(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleExecuteDeletePurchase}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-bold"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              Confirm Delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Action Modals */}
       <ActionModals

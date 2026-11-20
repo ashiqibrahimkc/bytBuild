@@ -25,7 +25,7 @@ import {
   AlertTriangle,
   FileCheck,
 } from "lucide-react";
-import { Worker, WorkerCompensationType } from "@/lib/types";
+import { Worker, WorkerCompensationType, PaymentMode } from "@/lib/types";
 import { useConstruction } from "@/lib/store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -49,10 +49,113 @@ export default function WorkersPage() {
     addWorker,
     updateWorker,
     deleteWorker,
+    updateWorkerWorkLog,
+    deleteWorkerWorkLog,
+    updateWorkerPayment,
+    deleteWorkerPayment,
   } = useConstruction();
 
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>("");
   const [isAddWorkerOpen, setIsAddWorkerOpen] = useState(false);
+
+  // Edit & Delete Transaction State in Worker Statement
+  const [editingTx, setEditingTx] = useState<{
+    id: string;
+    type: "EARNED" | "PAID";
+    date: string;
+    amount: number;
+    siteId?: string;
+    paymentMode?: PaymentMode;
+    voucherNo?: string;
+    notes?: string;
+  } | null>(null);
+
+  const [editTxDate, setEditTxDate] = useState("");
+  const [editTxAmount, setEditTxAmount] = useState("");
+  const [editTxSiteId, setEditTxSiteId] = useState("");
+  const [editTxPaymentMode, setEditTxPaymentMode] = useState<PaymentMode>("CASH");
+  const [editTxVoucherNo, setEditTxVoucherNo] = useState("");
+  const [editTxNotes, setEditTxNotes] = useState("");
+
+  const [deletingTx, setDeletingTx] = useState<{
+    id: string;
+    type: "EARNED" | "PAID";
+    date: string;
+    amount: number;
+    description: string;
+    paymentMode?: PaymentMode;
+    voucherNo?: string;
+    notes?: string;
+  } | null>(null);
+
+  const openEditTxModal = (tx: any) => {
+    setEditingTx({
+      id: tx.id,
+      type: tx.type,
+      date: tx.date,
+      amount: tx.type === "EARNED" ? tx.creditEarned : tx.debitPaid,
+      siteId: tx.siteId,
+      paymentMode: tx.paymentMode,
+      voucherNo: tx.voucherNo,
+      notes: tx.notes,
+    });
+    setEditTxDate(tx.date ? tx.date.split("T")[0] : "");
+    setEditTxAmount(
+      (tx.type === "EARNED" ? tx.creditEarned : tx.debitPaid).toString()
+    );
+    setEditTxSiteId(tx.siteId || (sites[0]?.id || ""));
+    setEditTxPaymentMode(tx.paymentMode || "CASH");
+    setEditTxVoucherNo(tx.voucherNo || "");
+    setEditTxNotes(tx.notes || "");
+  };
+
+  const openDeleteTxModal = (tx: any) => {
+    setDeletingTx({
+      id: tx.id,
+      type: tx.type,
+      date: tx.date,
+      amount: tx.type === "EARNED" ? tx.creditEarned : tx.debitPaid,
+      description: tx.description,
+      paymentMode: tx.paymentMode,
+      voucherNo: tx.voucherNo,
+      notes: tx.notes,
+    });
+  };
+
+  const handleUpdateTx = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTx) return;
+    const amountVal = parseFloat(editTxAmount);
+    if (isNaN(amountVal) || amountVal <= 0) return;
+
+    if (editingTx.type === "EARNED") {
+      updateWorkerWorkLog(editingTx.id, {
+        workDate: editTxDate ? new Date(editTxDate).toISOString() : editingTx.date,
+        siteId: editTxSiteId,
+        wageAmount: amountVal,
+        notes: editTxNotes.trim(),
+      });
+    } else {
+      updateWorkerPayment(editingTx.id, {
+        paymentDate: editTxDate ? new Date(editTxDate).toISOString() : editingTx.date,
+        amount: amountVal,
+        paymentMode: editTxPaymentMode,
+        voucherNo: editTxVoucherNo.trim(),
+        notes: editTxNotes.trim(),
+      });
+    }
+    setEditingTx(null);
+  };
+
+  const handleExecuteDeleteTx = () => {
+    if (!deletingTx) return;
+    if (deletingTx.type === "EARNED") {
+      deleteWorkerWorkLog(deletingTx.id);
+    } else {
+      deleteWorkerPayment(deletingTx.id);
+    }
+    setDeletingTx(null);
+  };
 
   // Edit Worker State
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
@@ -290,8 +393,10 @@ export default function WorkersPage() {
         type: "EARNED" as const,
         description: `Worked at ${sites.find((s) => s.id === log.siteId)?.name || "Site"}`,
         siteName: sites.find((s) => s.id === log.siteId)?.name || "Site",
+        siteId: log.siteId,
+        paymentMode: undefined as PaymentMode | undefined,
         notes: log.notes,
-        voucherNo: undefined,
+        voucherNo: undefined as string | undefined,
         creditEarned: log.wageAmount,
         debitPaid: 0,
       })),
@@ -301,6 +406,8 @@ export default function WorkersPage() {
         type: "PAID" as const,
         description: `Wage Disbursement (${pay.paymentMode})`,
         siteName: "—",
+        siteId: undefined as string | undefined,
+        paymentMode: pay.paymentMode as PaymentMode | undefined,
         notes: pay.notes,
         voucherNo: pay.voucherNo,
         creditEarned: 0,
@@ -1124,12 +1231,13 @@ export default function WorkersPage() {
                     <th className="py-3 px-4 text-right font-semibold">Wages Earned (Credit)</th>
                     <th className="py-3 px-4 text-right font-semibold">Wages Paid (Debit)</th>
                     <th className="py-3 px-4 text-right font-semibold">Running Balance</th>
+                    <th className="py-3 px-4 text-right font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
                   {paginatedStatement.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-xs text-slate-400 italic">
+                      <td colSpan={8} className="py-8 text-center text-xs text-slate-400 italic">
                         No transactions recorded for this worker within the selected date range.
                       </td>
                     </tr>
@@ -1167,6 +1275,26 @@ export default function WorkersPage() {
                           >
                             {formatCurrency(tx.runningBalance)}
                           </span>
+                        </td>
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => openEditTxModal(tx)}
+                              className="p-1.5 text-slate-400 hover:text-amber-600 rounded hover:bg-amber-50 transition-colors"
+                              title="Edit Entry"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openDeleteTxModal(tx)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors"
+                              title="Delete Entry"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -1635,6 +1763,168 @@ export default function WorkersPage() {
           </Modal>
         );
       })()}
+
+      {/* Edit Worker Transaction Modal (Earned Log or Payment) */}
+      <Modal
+        isOpen={!!editingTx}
+        onClose={() => setEditingTx(null)}
+        title={editingTx?.type === "EARNED" ? "Edit Worker Wage Entry" : "Edit Wage Disbursement"}
+        description={
+          editingTx?.type === "EARNED"
+            ? "Update the work date, site allocation, earned wage amount, or notes."
+            : "Update disbursement date, paid amount, payment mode, voucher number, or remarks."
+        }
+      >
+        <form onSubmit={handleUpdateTx} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                {editingTx?.type === "EARNED" ? "Work Date *" : "Payment Date *"}
+              </label>
+              <Input
+                type="date"
+                value={editTxDate}
+                onChange={(e) => setEditTxDate(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                {editingTx?.type === "EARNED" ? "Wage Amount (₹) *" : "Disbursement Amount (₹) *"}
+              </label>
+              <Input
+                type="number"
+                step="any"
+                min="0.01"
+                placeholder="e.g. 950"
+                value={editTxAmount}
+                onChange={(e) => setEditTxAmount(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          {editingTx?.type === "EARNED" ? (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Site Allocation *</label>
+              <select
+                value={editTxSiteId}
+                onChange={(e) => setEditTxSiteId(e.target.value)}
+                className="w-full text-xs rounded-md border border-slate-300 p-2 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                required
+              >
+                {sites.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.clientName})
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Payment Mode *</label>
+                <select
+                  value={editTxPaymentMode}
+                  onChange={(e) => setEditTxPaymentMode(e.target.value as PaymentMode)}
+                  className="w-full text-xs rounded-md border border-slate-300 p-2 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="CASH">CASH</option>
+                  <option value="ONLINE">ONLINE / UPI / NEFT</option>
+                  <option value="CHEQUE">CHEQUE</option>
+                  <option value="OTHER">OTHER</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Voucher / Ref #</label>
+                <Input
+                  placeholder="e.g. VCH-0042"
+                  value={editTxVoucherNo}
+                  onChange={(e) => setEditTxVoucherNo(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              {editingTx?.type === "EARNED" ? "Work Notes / Activity" : "Remarks / Notes"}
+            </label>
+            <Input
+              placeholder={editingTx?.type === "EARNED" ? "e.g. Masonry work on 1st floor slab" : "e.g. Weekly wage disbursement"}
+              value={editTxNotes}
+              onChange={(e) => setEditTxNotes(e.target.value)}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setEditingTx(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Worker Transaction Modal (Earned Log or Payment) */}
+      <Modal
+        isOpen={!!deletingTx}
+        onClose={() => setDeletingTx(null)}
+        title={deletingTx?.type === "EARNED" ? "Delete Worker Wage Entry" : "Delete Wage Disbursement"}
+        description="Are you sure you want to permanently delete this transaction record?"
+      >
+        <div className="space-y-4">
+          <div className="rounded-xl bg-rose-50 border border-rose-200 p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-rose-900">
+                  {deletingTx?.type === "EARNED" ? "Wage Log: " : "Disbursement: "}
+                  {deletingTx && formatCurrency(deletingTx.amount)}
+                </h4>
+                <p className="text-xs text-rose-700">
+                  Date: <strong>{deletingTx && formatDate(deletingTx.date)}</strong>
+                  {deletingTx?.voucherNo && ` • Voucher #${deletingTx.voucherNo}`}
+                </p>
+                <p className="text-xs text-rose-700">
+                  {deletingTx?.type === "EARNED" ? (
+                    <>Site: <strong>{deletingTx.description}</strong></>
+                  ) : (
+                    <>Mode: <strong>{deletingTx?.paymentMode || "CASH"}</strong></>
+                  )}
+                </p>
+                {deletingTx?.notes && (
+                  <p className="text-xs text-rose-600 italic">
+                    Notes: {deletingTx.notes}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-500">
+            This will permanently remove this record from the worker&apos;s ledger and recalculate their outstanding balance. This action cannot be undone.
+          </p>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setDeletingTx(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleExecuteDeleteTx}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-bold"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              Confirm Delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Action Modals */}
       <ActionModals
