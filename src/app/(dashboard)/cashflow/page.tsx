@@ -180,197 +180,206 @@ export default function CashFlowPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
       {/* ── Top Overview & Overhead (Hidden when printing cash movement ledger) ── */}
       <div className="space-y-6 print:hidden">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-            Company Cash Flow & Overhead
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Real cash reconciliation: Cash in hand, actual cash outflows (vendors, wages, petrol), and client receipts.
-          </p>
-        </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Company Cash Flow & Overhead
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Real cash reconciliation: Cash in hand, actual cash outflows (vendors, wages, petrol), and client receipts.
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => window.print()}
-            className="border-slate-200 text-slate-700 hover:bg-slate-100"
-          >
-            <Printer className="h-4 w-4 mr-1.5" />
-            Print Cash Book
-          </Button>
-          <Button onClick={() => setOpenExpense(true)} className="bg-slate-900 hover:bg-slate-800">
-            <Fuel className="h-4 w-4 mr-1.5" />
-            + Record Overhead / Petrol
-          </Button>
-          {role === "OWNER" && (
-            <Button onClick={() => setOpenIncome(true)} variant="success">
-              <IndianRupee className="h-4 w-4 mr-1.5" />
-              + Client Income
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* RBAC Notice if Manager */}
-      {role === "MANAGER" && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0" />
-            <span>
-              <strong>RBAC Restriction:</strong> You are currently viewing as <strong>Manager</strong>. Overall company cash balance and client inflows are masked. Switch to Owner role at top right to view master balance.
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+            <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={() => window.print()}
+                className="border-slate-200 text-slate-700 hover:bg-slate-100 text-xs sm:text-sm h-9 justify-center cursor-pointer"
+              >
+                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 shrink-0" />
+                <span className="truncate">Print Cash Book</span>
+              </Button>
+              <Button
+                onClick={() => setOpenExpense(true)}
+                className="bg-slate-900 hover:bg-slate-800 text-xs sm:text-sm h-9 justify-center cursor-pointer"
+              >
+                <Fuel className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 shrink-0" />
+                <span className="truncate">+ Overhead / Petrol</span>
+              </Button>
+            </div>
+            {role === "OWNER" && (
+              <Button
+                onClick={() => setOpenIncome(true)}
+                variant="success"
+                className="w-full sm:w-auto text-xs sm:text-sm h-9 justify-center cursor-pointer"
+              >
+                <IndianRupee className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 shrink-0" />
+                <span>+ Client Income</span>
+              </Button>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Cash Flow Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Cash in Hand */}
-        <Card className="border-l-4 border-l-amber-500 bg-white">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-semibold">
-                Net Cash in Hand
-              </CardDescription>
-              <Wallet className="h-4 w-4 text-amber-600" />
+        {/* RBAC Notice if Manager */}
+        {role === "MANAGER" && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 flex items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
+              <span>
+                <strong>RBAC Restriction:</strong> You are currently viewing as <strong>Manager</strong>. Overall company cash balance and client inflows are masked. Switch to Owner role at top right to view master balance.
+              </span>
             </div>
-            {role === "OWNER" ? (
-              <CardTitle className="text-2xl sm:text-3xl font-black text-slate-900">
-                {formatCurrency(cashFlow.currentCashInHand)}
-              </CardTitle>
-            ) : (
-              <div className="py-1 text-sm font-semibold text-slate-400">
-                •••••••• (Owner only)
-              </div>
-            )}
-          </CardHeader>
-          <CardContent className="pt-0 text-[11px] text-slate-500">
-            Inflows ({formatCurrency(cashFlow.totalCashReceived)}) minus Outflows ({formatCurrency(cashFlow.totalCashOutflow)})
-          </CardContent>
-        </Card>
-
-        {/* Total Inflows */}
-        <Card className="border-l-4 border-l-emerald-500 bg-white">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-semibold">
-                Total Cash Inflows (Clients)
-              </CardDescription>
-              <TrendingUp className="h-4 w-4 text-emerald-600" />
-            </div>
-            {role === "OWNER" ? (
-              <CardTitle className="text-2xl sm:text-3xl font-black text-emerald-600">
-                {formatCurrency(cashFlow.totalCashReceived)}
-              </CardTitle>
-            ) : (
-              <div className="py-1 text-sm font-semibold text-slate-400">
-                •••••••• (Owner only)
-              </div>
-            )}
-          </CardHeader>
-          <CardContent className="pt-0 text-[11px] text-slate-500">
-            {siteIncomes.length} client payment transactions
-          </CardContent>
-        </Card>
-
-        {/* Total Actual Cash Out */}
-        <Card className="border-l-4 border-l-rose-500 bg-white">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-semibold">
-                Total Cash Outflows
-              </CardDescription>
-              <TrendingDown className="h-4 w-4 text-rose-600" />
-            </div>
-            <CardTitle className="text-2xl sm:text-3xl font-black text-rose-600">
-              {formatCurrency(cashFlow.totalCashOutflow)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 text-[11px] text-slate-500">
-            Vendors ({formatCurrency(cashFlow.totalVendorCashPaid)}) + Wages ({formatCurrency(cashFlow.totalWorkerCashPaid)}) + Overhead ({formatCurrency(cashFlow.totalOverheadCashPaid)})
-          </CardContent>
-        </Card>
-
-        {/* Total Liabilities Pending */}
-        <Card className="border-l-4 border-l-slate-600 bg-white">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-semibold">
-                Total Unsettled Credit (Payables)
-              </CardDescription>
-              <Clock className="h-4 w-4 text-slate-600" />
-            </div>
-            <CardTitle className="text-2xl sm:text-3xl font-black text-slate-800">
-              {formatCurrency(cashFlow.totalVendorPayables + cashFlow.totalWorkerPayables)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 text-[11px] text-slate-500">
-            Vendor Credit: {formatCurrency(cashFlow.totalVendorPayables)} | Worker Wages: {formatCurrency(cashFlow.totalWorkerPayables)}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Company Overhead Breakdown */}
-      <Card>
-        <CardHeader className="border-b border-slate-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base font-bold text-slate-900">
-                Non-Site Overhead & Miscellaneous Expenses
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-500">
-                Expenses not directly billed to a single material vendor (petrol for supervisor site visits, tea snacks, permits, office upkeep).
-              </CardDescription>
-            </div>
-            <Button onClick={() => setOpenExpense(true)} size="sm" variant="outline">
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              Add Overhead
-            </Button>
           </div>
-        </CardHeader>
+        )}
 
-        <CardContent className="p-4 sm:p-6 space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-            {[
-              { label: "Outside Labour", cat: "OUTSIDE_LABOR", icon: HardHat, color: "text-amber-600 dark:text-amber-400", border: "border-l-amber-500" },
-              { label: "Room / Camp Rent", cat: "ROOM_RENT", icon: Building, color: "text-blue-600 dark:text-blue-400", border: "border-l-blue-500" },
-              { label: "Company Petrol", cat: "PETROL_FUEL", icon: Fuel, color: "text-amber-600 dark:text-amber-400", border: "border-l-amber-500" },
-              { label: "Worker Mess & Tea", cat: "FOOD_TEA_REFRESHMENTS", icon: Coffee, color: "text-emerald-600 dark:text-emerald-400", border: "border-l-emerald-500" },
-              { label: "Machinery Hire", cat: "MACHINERY_RENT", icon: Wrench, color: "text-purple-600 dark:text-purple-400", border: "border-l-purple-500" },
-              { label: "Office Overhead", cat: "OFFICE_OVERHEAD", icon: Briefcase, color: "text-cyan-600 dark:text-cyan-400", border: "border-l-cyan-500" },
-              { label: "Miscellaneous", cat: "MISCELLANEOUS", icon: Receipt, color: "text-slate-600 dark:text-slate-400", border: "border-l-slate-400" },
-            ].map((item) => {
-              const Icon = item.icon;
-              // Sum both aliases if any
-              let total = expensesByCategory[item.cat] || 0;
-              if (item.cat === "PETROL_FUEL") total += (expensesByCategory["FUEL_TRAVEL"] || 0);
-              if (item.cat === "FOOD_TEA_REFRESHMENTS") total += (expensesByCategory["TEA_REFRESHMENTS"] || 0);
-              if (item.cat === "MACHINERY_RENT") total += (expensesByCategory["EQUIPMENT_RENT"] || 0);
-
-              return (
-                <div key={item.cat} className={`rounded-xl border border-slate-200 dark:border-slate-800 border-l-4 ${item.border} bg-white dark:bg-slate-900 p-3 text-center shadow-xs`}>
-                  <Icon className={`h-5 w-5 mx-auto mb-1 ${item.color}`} />
-                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400 block truncate">
-                    {item.label}
-                  </span>
-                  <span className="text-sm font-bold text-slate-900 dark:text-slate-100 block mt-1 font-mono">
-                    {formatCurrency(total)}
-                  </span>
+        {/* Cash Flow Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* Cash in Hand */}
+          <Card className="border-l-4 border-l-amber-500 bg-white">
+            <CardHeader className="p-4 sm:p-5 pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="text-xs font-semibold">
+                  Net Cash in Hand
+                </CardDescription>
+                <Wallet className="h-4 w-4 text-amber-600" />
+              </div>
+              {role === "OWNER" ? (
+                <CardTitle className="text-2xl sm:text-3xl font-black text-slate-900">
+                  {formatCurrency(cashFlow.currentCashInHand)}
+                </CardTitle>
+              ) : (
+                <div className="py-1 text-sm font-semibold text-slate-400">
+                  •••••••• (Owner only)
                 </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+              )}
+            </CardHeader>
+            <CardContent className="p-4 sm:p-5 pt-0 text-[11px] text-slate-500 break-words">
+              Inflows ({formatCurrency(cashFlow.totalCashReceived)}) minus Outflows ({formatCurrency(cashFlow.totalCashOutflow)})
+            </CardContent>
+          </Card>
+
+          {/* Total Inflows */}
+          <Card className="border-l-4 border-l-emerald-500 bg-white">
+            <CardHeader className="p-4 sm:p-5 pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="text-xs font-semibold">
+                  Total Cash Inflows (Clients)
+                </CardDescription>
+                <TrendingUp className="h-4 w-4 text-emerald-600" />
+              </div>
+              {role === "OWNER" ? (
+                <CardTitle className="text-2xl sm:text-3xl font-black text-emerald-600">
+                  {formatCurrency(cashFlow.totalCashReceived)}
+                </CardTitle>
+              ) : (
+                <div className="py-1 text-sm font-semibold text-slate-400">
+                  •••••••• (Owner only)
+                </div>
+              )}
+            </CardHeader>
+            <CardContent className="p-4 sm:p-5 pt-0 text-[11px] text-slate-500 break-words">
+              {siteIncomes.length} client payment transactions
+            </CardContent>
+          </Card>
+
+          {/* Total Actual Cash Out */}
+          <Card className="border-l-4 border-l-rose-500 bg-white">
+            <CardHeader className="p-4 sm:p-5 pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="text-xs font-semibold">
+                  Total Cash Outflows
+                </CardDescription>
+                <TrendingDown className="h-4 w-4 text-rose-600" />
+              </div>
+              <CardTitle className="text-2xl sm:text-3xl font-black text-rose-600">
+                {formatCurrency(cashFlow.totalCashOutflow)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-5 pt-0 text-[11px] text-slate-500 break-words">
+              Vendors ({formatCurrency(cashFlow.totalVendorCashPaid)}) + Wages ({formatCurrency(cashFlow.totalWorkerCashPaid)}) + Overhead ({formatCurrency(cashFlow.totalOverheadCashPaid)})
+            </CardContent>
+          </Card>
+
+          {/* Total Liabilities Pending */}
+          <Card className="border-l-4 border-l-slate-600 bg-white">
+            <CardHeader className="p-4 sm:p-5 pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="text-xs font-semibold">
+                  Total Unsettled Credit (Payables)
+                </CardDescription>
+                <Clock className="h-4 w-4 text-slate-600" />
+              </div>
+              <CardTitle className="text-2xl sm:text-3xl font-black text-slate-800">
+                {formatCurrency(cashFlow.totalVendorPayables + cashFlow.totalWorkerPayables)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-5 pt-0 text-[11px] text-slate-500 break-words">
+              Vendor Credit: {formatCurrency(cashFlow.totalVendorPayables)} | Worker Wages: {formatCurrency(cashFlow.totalWorkerPayables)}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Company Overhead Breakdown */}
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b border-slate-100 p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900">
+                  Non-Site Overhead & Miscellaneous Expenses
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500 mt-0.5">
+                  Expenses not directly billed to a single material vendor (petrol for supervisor site visits, tea snacks, permits, office upkeep).
+                </CardDescription>
+              </div>
+              <Button onClick={() => setOpenExpense(true)} size="sm" variant="outline" className="w-full sm:w-auto shrink-0 cursor-pointer">
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Add Overhead
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-3 sm:p-5 space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-3">
+              {[
+                { label: "Outside Labour", cat: "OUTSIDE_LABOR", icon: HardHat, color: "text-amber-600 dark:text-amber-400", border: "border-l-amber-500" },
+                { label: "Room / Camp Rent", cat: "ROOM_RENT", icon: Building, color: "text-blue-600 dark:text-blue-400", border: "border-l-blue-500" },
+                { label: "Company Petrol", cat: "PETROL_FUEL", icon: Fuel, color: "text-amber-600 dark:text-amber-400", border: "border-l-amber-500" },
+                { label: "Worker Mess & Tea", cat: "FOOD_TEA_REFRESHMENTS", icon: Coffee, color: "text-emerald-600 dark:text-emerald-400", border: "border-l-emerald-500" },
+                { label: "Machinery Hire", cat: "MACHINERY_RENT", icon: Wrench, color: "text-purple-600 dark:text-purple-400", border: "border-l-purple-500" },
+                { label: "Office Overhead", cat: "OFFICE_OVERHEAD", icon: Briefcase, color: "text-cyan-600 dark:text-cyan-400", border: "border-l-cyan-500" },
+                { label: "Miscellaneous", cat: "MISCELLANEOUS", icon: Receipt, color: "text-slate-600 dark:text-slate-400", border: "border-l-slate-400" },
+              ].map((item) => {
+                const Icon = item.icon;
+                // Sum both aliases if any
+                let total = expensesByCategory[item.cat] || 0;
+                if (item.cat === "PETROL_FUEL") total += (expensesByCategory["FUEL_TRAVEL"] || 0);
+                if (item.cat === "FOOD_TEA_REFRESHMENTS") total += (expensesByCategory["TEA_REFRESHMENTS"] || 0);
+                if (item.cat === "MACHINERY_RENT") total += (expensesByCategory["EQUIPMENT_RENT"] || 0);
+
+                return (
+                  <div key={item.cat} className={`rounded-xl border border-slate-200 dark:border-slate-800 border-l-4 ${item.border} bg-white dark:bg-slate-900 p-2.5 sm:p-3 text-center shadow-xs min-w-0`}>
+                    <Icon className={`h-4 w-4 sm:h-5 sm:w-5 mx-auto mb-1 ${item.color}`} />
+                    <span className="text-[10px] sm:text-[11px] font-medium text-slate-600 dark:text-slate-400 block truncate" title={item.label}>
+                      {item.label}
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 block mt-1 font-mono truncate">
+                      {formatCurrency(total)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Cash Movement Ledger */}
-      <Card className="print:border-none print:shadow-none">
+      <Card className="print:border-none print:shadow-none overflow-hidden max-w-full">
         {/* ── Official Printable Cash Book Header (Print Only) ─────────────── */}
         <div className="hidden print:block p-6 border-b-2 border-slate-900 pb-4">
           <div className="flex items-start justify-between">
@@ -421,27 +430,27 @@ export default function CashFlowPage() {
           </div>
         </div>
 
-        <CardHeader className="border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
+        <CardHeader className="border-b border-slate-100 p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 print:hidden">
           <div>
             <CardTitle className="text-base font-bold text-slate-900">
               Cash Movement Book (Actual Inflows & Outflows)
             </CardTitle>
-            <CardDescription className="text-xs text-slate-500">
+            <CardDescription className="text-xs text-slate-500 mt-0.5">
               Every Rupee entering or leaving the bank accounts or physical cash box.
             </CardDescription>
           </div>
 
           {/* Date Filter & Presets */}
-          <div className="flex flex-wrap items-center gap-2 print:hidden">
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 print:hidden w-full lg:w-auto">
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto max-w-full scrollbar-none">
               {(["ALL", "THIS_MONTH", "LAST_MONTH", "THIS_WEEK"] as const).map((preset) => (
                 <button
                   key={preset}
                   onClick={() => handlePresetSelect(preset)}
-                  className={`px-2 py-1 text-[11px] font-semibold rounded ${
+                  className={`px-2.5 py-1 text-[11px] font-semibold rounded whitespace-nowrap cursor-pointer transition-colors ${
                     datePreset === preset
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "bg-white text-slate-900 shadow-2xs font-bold"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
                   }`}
                 >
                   {preset === "ALL"
@@ -455,8 +464,8 @@ export default function CashFlowPage() {
               ))}
             </div>
 
-            <div className="flex items-center gap-1.5 text-xs">
-              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+            <div className="flex items-center gap-1.5 text-xs w-full sm:w-auto">
+              <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
               <input
                 type="date"
                 value={startDate}
@@ -465,9 +474,9 @@ export default function CashFlowPage() {
                   setDatePreset("CUSTOM");
                   setCurrentPage(1);
                 }}
-                className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-700 bg-white"
+                className="w-full sm:w-auto min-w-0 rounded border border-slate-200 px-2 py-1 text-xs text-slate-700 bg-white"
               />
-              <span className="text-slate-400">to</span>
+              <span className="text-slate-400 shrink-0">to</span>
               <input
                 type="date"
                 value={endDate}
@@ -476,25 +485,25 @@ export default function CashFlowPage() {
                   setDatePreset("CUSTOM");
                   setCurrentPage(1);
                 }}
-                className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-700 bg-white"
+                className="w-full sm:w-auto min-w-0 rounded border border-slate-200 px-2 py-1 text-xs text-slate-700 bg-white"
               />
             </div>
           </div>
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="overflow-x-auto print:hidden">
-            <table className="w-full text-left text-xs md:text-sm">
+          <div className="overflow-x-auto print:hidden w-full">
+            <table className="w-full text-left text-xs md:text-sm min-w-[680px]">
               <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4">Movement</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4">Site / Project</th>
-                  <th className="py-3 px-4">Mode & Ref</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Date</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Movement</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Category</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Site / Project</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Mode & Ref</th>
                   <th className="py-3 px-4">Notes</th>
-                  <th className="py-3 px-4 text-right">Inflow (+)</th>
-                  <th className="py-3 px-4 text-right">Outflow (-)</th>
+                  <th className="py-3 px-4 text-right whitespace-nowrap">Inflow (+)</th>
+                  <th className="py-3 px-4 text-right whitespace-nowrap">Outflow (-)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -507,10 +516,10 @@ export default function CashFlowPage() {
                 ) : (
                   paginatedMovements.map((m) => (
                     <tr key={m.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3 px-4 font-mono text-slate-500 text-xs">
+                      <td className="py-3 px-4 font-mono text-slate-500 text-xs whitespace-nowrap">
                         {formatDate(m.date)}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         <Badge
                           variant={m.direction === "INFLOW" ? "success" : "destructive"}
                           className="text-[10px]"
@@ -518,25 +527,25 @@ export default function CashFlowPage() {
                           {m.direction === "INFLOW" ? "CASH IN" : "CASH OUT"}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4 font-semibold text-slate-800">
+                      <td className="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">
                         {m.category}
                       </td>
-                      <td className="py-3 px-4 text-slate-600">
+                      <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
                         {m.site}
                       </td>
-                      <td className="py-3 px-4 text-xs">
+                      <td className="py-3 px-4 text-xs whitespace-nowrap">
                         <span className="font-medium text-slate-700 block">{m.mode}</span>
                         {m.refNo !== "-" && (
                           <span className="font-mono text-slate-400 text-[10px]">#{m.refNo}</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 text-xs">
+                      <td className="py-3 px-4 text-slate-500 text-xs max-w-xs break-words">
                         {m.notes || "-"}
                       </td>
-                      <td className="py-3 px-4 text-right font-bold text-emerald-600">
+                      <td className="py-3 px-4 text-right font-bold text-emerald-600 whitespace-nowrap">
                         {m.direction === "INFLOW" ? (role === "OWNER" ? `+${formatCurrency(m.amount)}` : "••••••") : "-"}
                       </td>
-                      <td className="py-3 px-4 text-right font-bold text-rose-600">
+                      <td className="py-3 px-4 text-right font-bold text-rose-600 whitespace-nowrap">
                         {m.direction === "OUTFLOW" ? `-${formatCurrency(m.amount)}` : "-"}
                       </td>
                     </tr>

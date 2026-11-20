@@ -54,7 +54,7 @@ export function Pagination({
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-white border-t border-slate-200 text-xs text-slate-600">
       {/* Items info & page size dropdown */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-center sm:text-left">
         <span>
           Showing <strong className="text-slate-900 font-bold">{startItem}</strong> to{" "}
           <strong className="text-slate-900 font-bold">{endItem}</strong> of{" "}
@@ -62,7 +62,7 @@ export function Pagination({
         </span>
 
         {onPageSizeChange && (
-          <div className="flex items-center gap-1.5 ml-2">
+          <div className="flex items-center gap-1.5 ml-1 sm:ml-2">
             <span className="text-slate-400">Rows:</span>
             <select
               value={pageSize}
@@ -86,7 +86,7 @@ export function Pagination({
       </div>
 
       {/* Page navigation */}
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center justify-center gap-1">
         <Button
           variant="outline"
           size="sm"
