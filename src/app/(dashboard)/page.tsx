@@ -61,6 +61,7 @@ export default function DashboardPage() {
   const {
     role,
     isDbLoading,
+    canAccessPage,
     companyName,
     setCompanyName,
     sites,
@@ -92,50 +93,29 @@ export default function DashboardPage() {
     action: "PURCHASE" | "WORK" | "EXPENSE" | "INCOME"
   ) => {
     setSelectedSiteId(siteId);
-    if (action === "PURCHASE") setOpenPurchase(true);
-    if (action === "WORK") setOpenWorkLog(true);
-    if (action === "EXPENSE") setOpenExpense(true);
-    if (action === "INCOME") setOpenIncome(true);
+    if (action === "PURCHASE" && canAccessPage("vendors")) setOpenPurchase(true);
+    if (action === "WORK" && canAccessPage("workers")) setOpenWorkLog(true);
+    if (action === "EXPENSE" && canAccessPage("company-expenses")) setOpenExpense(true);
+    if (action === "INCOME" && role === "OWNER") setOpenIncome(true);
   };
 
   // Preview top 4 sites for dashboard overview
   const previewSites = useMemo(() => sites.slice(0, 4), [sites]);
 
-  // Quick Action cards config
+  // Quick Action cards config - strictly gated by RBAC permissions
   const quickActions = useMemo(() => {
-    if (role === "ACCOUNTANT") {
-      return [
-        {
-          label: "Pay Vendor",
-          desc: "Disburse partial or full credit",
-          icon: Receipt,
-          iconBg: "bg-rose-100",
-          iconColor: "text-rose-700",
-          border: "border-l-rose-500",
-          onClick: () => setOpenVendorPay(true),
-        },
-        {
-          label: "Pay Worker",
-          desc: "Disburse wages to labor",
-          icon: Users,
-          iconBg: "bg-orange-100",
-          iconColor: "text-orange-700",
-          border: "border-l-orange-500",
-          onClick: () => setOpenWorkerPay(true),
-        },
-        {
-          label: "Log Overhead / Petrol",
-          desc: "Record room rent, fuel or mess",
-          icon: Fuel,
-          iconBg: "bg-purple-100",
-          iconColor: "text-purple-700",
-          border: "border-l-purple-500",
-          onClick: () => setOpenExpense(true),
-        },
-      ];
-    }
-    return [
-      {
+    const actions: {
+      label: string;
+      desc: string;
+      icon: any;
+      iconBg: string;
+      iconColor: string;
+      border: string;
+      onClick: () => void;
+    }[] = [];
+
+    if (canAccessPage("vendors")) {
+      actions.push({
         label: "Material Bill",
         desc: "Record vendor purchase with voucher",
         icon: Truck,
@@ -143,8 +123,11 @@ export default function DashboardPage() {
         iconColor: "text-amber-700",
         border: "border-l-amber-500",
         onClick: () => setOpenPurchase(true),
-      },
-      {
+      });
+    }
+
+    if (canAccessPage("workers")) {
+      actions.push({
         label: "Assign Worker",
         desc: "Log daily wage to site",
         icon: Users,
@@ -152,8 +135,11 @@ export default function DashboardPage() {
         iconColor: "text-blue-700",
         border: "border-l-blue-500",
         onClick: () => setOpenWorkLog(true),
-      },
-      {
+      });
+    }
+
+    if (canAccessPage("vendors")) {
+      actions.push({
         label: "Pay Vendor",
         desc: "Disburse partial or full credit",
         icon: Receipt,
@@ -161,8 +147,11 @@ export default function DashboardPage() {
         iconColor: "text-rose-700",
         border: "border-l-rose-500",
         onClick: () => setOpenVendorPay(true),
-      },
-      {
+      });
+    }
+
+    if (canAccessPage("workers")) {
+      actions.push({
         label: "Pay Worker",
         desc: "Disburse wages to labor",
         icon: Users,
@@ -170,21 +159,23 @@ export default function DashboardPage() {
         iconColor: "text-orange-700",
         border: "border-l-orange-500",
         onClick: () => setOpenWorkerPay(true),
-      },
-      ...(role === "OWNER"
-        ? [
-          {
-            label: "Record Client Income",
-            desc: "Log advance or milestone collection",
-            icon: IndianRupee,
-            iconBg: "bg-emerald-100",
-            iconColor: "text-emerald-700",
-            border: "border-l-emerald-500",
-            onClick: () => setOpenIncome(true),
-          },
-        ]
-        : []),
-      {
+      });
+    }
+
+    if (role === "OWNER") {
+      actions.push({
+        label: "Record Client Income",
+        desc: "Log advance or milestone collection",
+        icon: IndianRupee,
+        iconBg: "bg-emerald-100",
+        iconColor: "text-emerald-700",
+        border: "border-l-emerald-500",
+        onClick: () => setOpenIncome(true),
+      });
+    }
+
+    if (canAccessPage("company-expenses")) {
+      actions.push({
         label: "Log Overhead / Petrol",
         desc: "Record room rent, fuel or mess",
         icon: Fuel,
@@ -192,9 +183,11 @@ export default function DashboardPage() {
         iconColor: "text-purple-700",
         border: "border-l-purple-500",
         onClick: () => setOpenExpense(true),
-      },
-    ];
-  }, [role]);
+      });
+    }
+
+    return actions;
+  }, [role, canAccessPage]);
 
   if (isDbLoading) {
     return <DashboardSkeleton />;
@@ -238,12 +231,14 @@ export default function DashboardPage() {
               Company Cash in Hand & Liquidity Hub
             </h2>
           </div>
-          <Link
-            href="/cashflow"
-            className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 hover:underline flex items-center gap-1 font-mono"
-          >
-            Full Cash Flow Book <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+          {canAccessPage("cashflow") && (
+            <Link
+              href="/cashflow"
+              className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 hover:underline flex items-center gap-1 font-mono"
+            >
+              Full Cash Flow Book <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          )}
         </div>
 
         {/* Master Treasury Hero Card (Rich Construction Theme) */}
@@ -358,12 +353,14 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
               <span className="text-slate-400 font-mono">Across {vendors.length} vendors</span>
-              <button
-                onClick={() => setOpenVendorPay(true)}
-                className="font-bold text-amber-600 hover:text-amber-700 hover:underline cursor-pointer"
-              >
-                Pay Vendor →
-              </button>
+              {canAccessPage("vendors") && (
+                <button
+                  onClick={() => setOpenVendorPay(true)}
+                  className="font-bold text-amber-600 hover:text-amber-700 hover:underline cursor-pointer"
+                >
+                  Pay Vendor →
+                </button>
+              )}
             </div>
           </div>
 
@@ -380,12 +377,14 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
               <span className="text-slate-400 font-mono">Owed to {workers.length} workers</span>
-              <button
-                onClick={() => setOpenWorkerPay(true)}
-                className="font-bold text-amber-600 hover:text-amber-700 hover:underline cursor-pointer"
-              >
-                Disburse Wages →
-              </button>
+              {canAccessPage("workers") && (
+                <button
+                  onClick={() => setOpenWorkerPay(true)}
+                  className="font-bold text-amber-600 hover:text-amber-700 hover:underline cursor-pointer"
+                >
+                  Disburse Wages →
+                </button>
+              )}
             </div>
           </div>
 
@@ -413,32 +412,34 @@ export default function DashboardPage() {
       </section>
 
       {/* ── Quick Actions ─────────────────────────────────────────────────── */}
-      <section>
-        <div className="flex items-center gap-2 mb-2.5">
-          <span className="h-2 w-2 rounded-full bg-blue-500 inline-block" />
-          <h2 className="text-xs font-extrabold uppercase tracking-tight text-slate-700 font-mono">
-            Direct Financial Actions
-          </h2>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Button
-                key={action.label}
-                onClick={action.onClick}
-                variant="outline"
-                size="sm"
-                title={action.desc}
-                className="h-8 px-3 text-xs font-medium gap-1.5 border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 hover:text-slate-900 shadow-2xs cursor-pointer"
-              >
-                <Icon className={`h-3.5 w-3.5 ${action.iconColor}`} />
-                <span>{action.label}</span>
-              </Button>
-            );
-          })}
-        </div>
-      </section>
+      {quickActions.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="h-2 w-2 rounded-full bg-blue-500 inline-block" />
+            <h2 className="text-xs font-extrabold uppercase tracking-tight text-slate-700 font-mono">
+              Direct Financial Actions
+            </h2>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <Button
+                  key={action.label}
+                  onClick={action.onClick}
+                  variant="outline"
+                  size="sm"
+                  title={action.desc}
+                  className="h-8 px-3 text-xs font-medium gap-1.5 border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 hover:text-slate-900 shadow-2xs cursor-pointer"
+                >
+                  <Icon className={`h-3.5 w-3.5 ${action.iconColor}`} />
+                  <span>{action.label}</span>
+                </Button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ── Site Performance Table (Hidden for Accountants) ───── */}
       {role !== "ACCOUNTANT" && (
@@ -472,12 +473,18 @@ export default function DashboardPage() {
                         {role === "OWNER" && (
                           <th className="py-3 px-4 text-right font-semibold">Client Income</th>
                         )}
-                        <th className="py-3 px-4 text-right font-semibold">Direct Site Action</th>
+                        {(canAccessPage("vendors") || canAccessPage("workers")) && (
+                          <th className="py-3 px-4 text-right font-semibold">Direct Site Action</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700">
                       {previewSites.map((site) => {
                         const stats = getSiteStats(site.id);
+                        const canAddMaterial = canAccessPage("vendors");
+                        const canAssignWorker = canAccessPage("workers");
+                        const hasSiteAction = canAddMaterial || canAssignWorker;
+
                         return (
                           <tr
                             key={site.id}
@@ -515,28 +522,34 @@ export default function DashboardPage() {
                                 {formatCurrency(stats.totalIncome)}
                               </td>
                             )}
-                            <td className="py-2.5 px-4 text-right whitespace-nowrap">
-                              <div className="flex items-center justify-end gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 text-[10px] px-2 bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100"
-                                  onClick={() => handleSiteAction(site.id, "PURCHASE")}
-                                  title="Add Vendor Material Bill for this site"
-                                >
-                                  + Material
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 text-[10px] px-2 bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100"
-                                  onClick={() => handleSiteAction(site.id, "WORK")}
-                                  title="Assign Worker Wage for this site"
-                                >
-                                  + Worker
-                                </Button>
-                              </div>
-                            </td>
+                            {hasSiteAction && (
+                              <td className="py-2.5 px-4 text-right whitespace-nowrap">
+                                <div className="flex items-center justify-end gap-1">
+                                  {canAddMaterial && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-6 text-[10px] px-2 bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100 cursor-pointer"
+                                      onClick={() => handleSiteAction(site.id, "PURCHASE")}
+                                      title="Add Vendor Material Bill for this site"
+                                    >
+                                      + Material
+                                    </Button>
+                                  )}
+                                  {canAssignWorker && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-6 text-[10px] px-2 bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100 cursor-pointer"
+                                      onClick={() => handleSiteAction(site.id, "WORK")}
+                                      title="Assign Worker Wage for this site"
+                                    >
+                                      + Worker
+                                    </Button>
+                                  )}
+                                </div>
+                              </td>
+                            )}
                           </tr>
                         );
                       })}
@@ -550,12 +563,14 @@ export default function DashboardPage() {
                     Showing <strong className="text-slate-900 font-bold">{previewSites.length}</strong> of{" "}
                     <strong className="text-slate-900 font-bold">{sites.length}</strong> active sites
                   </span>
-                  <Link
-                    href="/sites"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-xs font-bold text-slate-800 hover:text-amber-700 shadow-2xs transition-all font-mono"
-                  >
-                    All Sites <ArrowRight className="h-3.5 w-3.5 text-amber-600" />
-                  </Link>
+                  {canAccessPage("sites") && (
+                    <Link
+                      href="/sites"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-xs font-bold text-slate-800 hover:text-amber-700 shadow-2xs transition-all font-mono"
+                    >
+                      All Sites <ArrowRight className="h-3.5 w-3.5 text-amber-600" />
+                    </Link>
+                  )}
                 </div>
               </div>
             )}

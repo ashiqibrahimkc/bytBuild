@@ -54,6 +54,7 @@ export function ActionModals({
 }: ActionModalsProps) {
   const {
     role,
+    canAccessPage,
     sites,
     vendors,
     workers,
@@ -302,7 +303,7 @@ export function ActionModals({
     <>
       {/* 1. RECORD MATERIAL PURCHASE MODAL */}
       <Modal
-        isOpen={isOpenPurchase}
+        isOpen={isOpenPurchase && canAccessPage("vendors")}
         onClose={onClosePurchase}
         title="Record Site Material Purchase (Credit / Payable)"
         description="Records a new site material expense and adds to vendor credit without itemized material lists."
@@ -415,7 +416,7 @@ export function ActionModals({
 
       {/* 2. ASSIGN WORKER & LOG DAILY WAGE */}
       <Modal
-        isOpen={isOpenWorkLog}
+        isOpen={isOpenWorkLog && canAccessPage("workers")}
         onClose={onCloseWorkLog}
         title="Assign Worker to Site (Log Daily Wage)"
         description="Records the worker's earned salary and immediately adds a labor expense for the site."
@@ -520,7 +521,7 @@ export function ActionModals({
 
       {/* 3. SETTLE VENDOR PAYMENT */}
       <Modal
-        isOpen={isOpenVendorPay}
+        isOpen={isOpenVendorPay && canAccessPage("vendors")}
         onClose={onCloseVendorPay}
         title="Pay Vendor (Settle Credit / Partial Payment)"
         description="Records an actual cash outflow from the company and reduces the vendor's outstanding credit."
@@ -644,7 +645,7 @@ export function ActionModals({
 
       {/* 4. DISBURSE WORKER PAYMENT */}
       <Modal
-        isOpen={isOpenWorkerPay}
+        isOpen={isOpenWorkerPay && canAccessPage("workers")}
         onClose={onCloseWorkerPay}
         title="Pay Worker (Weekly / Partial Wage Settlement)"
         description="Records an actual company cash outflow and deducts from the worker's accumulated wage credit."
@@ -749,7 +750,7 @@ export function ActionModals({
 
       {/* 5. RECORD CLIENT SITE INCOME (OWNER ONLY RBAC) */}
       <Modal
-        isOpen={isOpenIncome}
+        isOpen={isOpenIncome && role === "OWNER"}
         onClose={onCloseIncome}
         title="Record Client Payment (Site Inflow)"
         description="Records funds received from a client for a project. Increases company cash balance."
@@ -883,7 +884,7 @@ export function ActionModals({
 
       {/* 6. RECORD COMPANY OVERHEAD & SITE MISC */}
       <Modal
-        isOpen={isOpenExpense}
+        isOpen={isOpenExpense && canAccessPage("company-expenses")}
         onClose={onCloseExpense}
         title="Record Company Overhead / Site Misc Expense"
         description="Records operational cash outflows like petrol for site visits, tea/snacks, or equipment."
