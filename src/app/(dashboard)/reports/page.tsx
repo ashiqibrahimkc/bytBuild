@@ -58,6 +58,7 @@ export default function ReportsPage() {
   const [selectedSiteId, setSelectedSiteId] = useState<string>("ALL");
   const [selectedVendorId, setSelectedVendorId] = useState<string>("ALL");
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>("ALL");
+  const [selectedExpenseCategory, setSelectedExpenseCategory] = useState<string>("ALL");
 
   // Date Filtering
   const [datePreset, setDatePreset] = useState<string>("ALL");
@@ -79,11 +80,12 @@ export default function ReportsPage() {
     );
   }, []);
 
-  // Reset statement vendor & worker filters when switching site
+  // Reset statement vendor, worker & expense filters when switching site
   useEffect(() => {
     if (activeReport === "SITE_STATEMENT") {
       setSelectedVendorId("ALL");
       setSelectedWorkerId("ALL");
+      setSelectedExpenseCategory("ALL");
     }
   }, [selectedSiteId]);
 
@@ -139,9 +141,10 @@ export default function ReportsPage() {
 
     const hasVendorFilter = selectedVendorId !== "ALL";
     const hasWorkerFilter = selectedWorkerId !== "ALL";
+    const hasExpenseFilter = selectedExpenseCategory !== "ALL";
 
     // Purchases
-    if (!hasWorkerFilter || hasVendorFilter) {
+    if ((!hasWorkerFilter && !hasExpenseFilter) || hasVendorFilter) {
       vendorPurchases
         .filter((p) => {
           if (!isTargetSite(p.siteId) || !isDateInRange(p.purchaseDate)) return false;
@@ -165,7 +168,7 @@ export default function ReportsPage() {
     }
 
     // Labor
-    if (!hasVendorFilter || hasWorkerFilter) {
+    if ((!hasVendorFilter && !hasExpenseFilter) || hasWorkerFilter) {
       workerWorkLogs
         .filter((w) => {
           if (!isTargetSite(w.siteId) || !isDateInRange(w.workDate)) return false;
@@ -188,33 +191,45 @@ export default function ReportsPage() {
         });
     }
 
-    // Misc
-    companyExpenses
-      .filter((e) => {
-        if (!isDateInRange(e.expenseDate)) return false;
-        if (e.siteId ? !isTargetSite(e.siteId) : selectedSiteId !== "ALL") return false;
-        if (hasVendorFilter && !hasWorkerFilter) return false;
-        if (hasWorkerFilter) {
-          return (e as any).workerId === selectedWorkerId;
-        }
-        return true;
-      })
-      .forEach((e) => {
-        const s = sites.find((site) => site.id === e.siteId);
-        list.push({
-          id: e.id,
-          date: e.expenseDate,
-          type: "SITE_EXPENSE",
-          party: `Overhead: ${e.category.replace("_", " ")}${s ? ` • ${s.name}` : ""}`,
-          voucher: e.voucherNo,
-          notes: e.notes,
-          debit: e.amount,
-          credit: 0,
+    // Misc / Expenses
+    if ((!hasVendorFilter && !hasWorkerFilter) || hasExpenseFilter) {
+      companyExpenses
+        .filter((e) => {
+          if (!isDateInRange(e.expenseDate)) return false;
+          if (e.siteId ? !isTargetSite(e.siteId) : selectedSiteId !== "ALL") return false;
+          if (hasExpenseFilter) {
+            if (selectedExpenseCategory === "PETROL_FUEL") {
+              if (e.category !== "PETROL_FUEL" && e.category !== "FUEL_TRAVEL") return false;
+            } else if (selectedExpenseCategory === "FOOD_TEA_REFRESHMENTS") {
+              if (e.category !== "FOOD_TEA_REFRESHMENTS" && e.category !== "TEA_REFRESHMENTS") return false;
+            } else if (selectedExpenseCategory === "MACHINERY_RENT") {
+              if (e.category !== "MACHINERY_RENT" && e.category !== "EQUIPMENT_RENT") return false;
+            } else if (e.category !== selectedExpenseCategory) {
+              return false;
+            }
+          }
+          if (hasWorkerFilter) {
+            return (e as any).workerId === selectedWorkerId;
+          }
+          return true;
+        })
+        .forEach((e) => {
+          const s = sites.find((site) => site.id === e.siteId);
+          list.push({
+            id: e.id,
+            date: e.expenseDate,
+            type: "SITE_EXPENSE",
+            party: `Overhead: ${e.category.replace("_", " ")}${s ? ` • ${s.name}` : ""}`,
+            voucher: e.voucherNo,
+            notes: e.notes,
+            debit: e.amount,
+            credit: 0,
+          });
         });
-      });
+    }
 
     // Incomes
-    if (role === "OWNER" && !hasVendorFilter && !hasWorkerFilter) {
+    if (role === "OWNER" && !hasVendorFilter && !hasWorkerFilter && !hasExpenseFilter) {
       siteIncomes
         .filter((i) => isTargetSite(i.siteId) && isDateInRange(i.incomeDate))
         .forEach((i) => {
@@ -242,6 +257,7 @@ export default function ReportsPage() {
     selectedSiteId,
     selectedVendorId,
     selectedWorkerId,
+    selectedExpenseCategory,
     vendorPurchases,
     workerWorkLogs,
     companyExpenses,
@@ -718,15 +734,56 @@ export default function ReportsPage() {
                       </button>
                     )}
                   </div>
+
+                  {/* Expense Category Filter */}
+                  <div className="flex items-center justify-between sm:justify-start gap-1.5 rounded-lg border border-purple-200 bg-purple-50/70 px-2.5 h-9.5 sm:h-9 shadow-2xs w-full sm:w-auto">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1 sm:flex-none">
+                      <Receipt className="h-3.5 w-3.5 text-purple-700 shrink-0" />
+                      <span className="text-purple-800 font-semibold text-[11px] shrink-0">Expense:</span>
+                      <select
+                        value={selectedExpenseCategory}
+                        onChange={(e) => {
+                          setSelectedExpenseCategory(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="bg-transparent text-xs font-bold text-purple-950 focus:outline-none cursor-pointer w-full sm:max-w-[160px] truncate"
+                      >
+                        <option value="ALL">All Expenses</option>
+                        <option value="OUTSIDE_LABOR">👷 Outside Labour</option>
+                        <option value="PETROL_FUEL">⛽ Petrol &amp; Fuel</option>
+                        <option value="FOOD_TEA_REFRESHMENTS">🍵 Mess &amp; Tea</option>
+                        <option value="ROOM_RENT">🏠 Camp Rent</option>
+                        <option value="MACHINERY_RENT">🚜 Machinery</option>
+                        <option value="OFFICE_OVERHEAD">🏢 Office Overhead</option>
+                        <option value="SITE_PERMIT_FEES">📄 Permit Fees</option>
+                        <option value="SALARY_ADVANCE">💵 Salaried Advance</option>
+                        <option value="MISCELLANEOUS">📦 Miscellaneous</option>
+                      </select>
+                    </div>
+                    {selectedExpenseCategory !== "ALL" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedExpenseCategory("ALL");
+                          setCurrentPage(1);
+                        }}
+                        className="ml-1 text-slate-400 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer"
+                        title="Clear expense filter"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Reset Filters Button */}
-                {(selectedVendorId !== "ALL" || selectedWorkerId !== "ALL") && (
+                {(selectedVendorId !== "ALL" || selectedWorkerId !== "ALL" || selectedExpenseCategory !== "ALL") && (
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedVendorId("ALL");
                       setSelectedWorkerId("ALL");
+                      setSelectedExpenseCategory("ALL");
                       setCurrentPage(1);
                     }}
                     className="inline-flex items-center justify-center gap-1 px-3 h-9 text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 shadow-2xs transition-colors cursor-pointer w-full sm:w-auto"
@@ -882,6 +939,11 @@ export default function ReportsPage() {
                     {selectedWorkerId !== "ALL" && (
                       <span className="text-blue-800 font-bold text-xs ml-2">
                         • Worker: {workers.find((w) => w.id === selectedWorkerId)?.name}
+                      </span>
+                    )}
+                    {selectedExpenseCategory !== "ALL" && (
+                      <span className="text-purple-800 font-bold text-xs ml-2">
+                        • Expense: {selectedExpenseCategory.replace(/_/g, " ")}
                       </span>
                     )}
                   </span>

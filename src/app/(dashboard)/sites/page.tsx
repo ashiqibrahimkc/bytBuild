@@ -174,11 +174,13 @@ export default function SitesPage() {
   const [statementTypeFilter, setStatementTypeFilter] = useState<string>("ALL");
   const [statementVendorFilter, setStatementVendorFilter] = useState<string>("ALL");
   const [statementWorkerFilter, setStatementWorkerFilter] = useState<string>("ALL");
+  const [statementExpenseCategoryFilter, setStatementExpenseCategoryFilter] = useState<string>("ALL");
   const [statementSearch, setStatementSearch] = useState("");
 
   useEffect(() => {
     setStatementVendorFilter("ALL");
     setStatementWorkerFilter("ALL");
+    setStatementExpenseCategoryFilter("ALL");
   }, [selectedSiteId]);
 
   const [generatedDate, setGeneratedDate] = useState("");
@@ -603,14 +605,29 @@ export default function SitesPage() {
     if (statementTypeFilter !== "ALL") {
       list = list.filter((e) => e.type === statementTypeFilter);
     }
-    if (statementVendorFilter !== "ALL" && statementWorkerFilter !== "ALL") {
-      list = list.filter(
-        (e) => e.vendorId === statementVendorFilter || e.workerId === statementWorkerFilter
-      );
-    } else if (statementVendorFilter !== "ALL") {
-      list = list.filter((e) => e.vendorId === statementVendorFilter);
-    } else if (statementWorkerFilter !== "ALL") {
-      list = list.filter((e) => e.workerId === statementWorkerFilter);
+    const hasVendorFilt = statementVendorFilter !== "ALL";
+    const hasWorkerFilt = statementWorkerFilter !== "ALL";
+    const hasExpenseFilt = statementExpenseCategoryFilter !== "ALL";
+
+    if (hasVendorFilt || hasWorkerFilt || hasExpenseFilt) {
+      list = list.filter((e) => {
+        if (hasVendorFilt && e.vendorId === statementVendorFilter) return true;
+        if (hasWorkerFilt && e.workerId === statementWorkerFilter) return true;
+        if (hasExpenseFilt && e.type === "EXPENSE") {
+          const cat = e.rawRecord?.category;
+          if (statementExpenseCategoryFilter === "PETROL_FUEL") {
+            return cat === "PETROL_FUEL" || cat === "FUEL_TRAVEL";
+          }
+          if (statementExpenseCategoryFilter === "FOOD_TEA_REFRESHMENTS") {
+            return cat === "FOOD_TEA_REFRESHMENTS" || cat === "TEA_REFRESHMENTS";
+          }
+          if (statementExpenseCategoryFilter === "MACHINERY_RENT") {
+            return cat === "MACHINERY_RENT" || cat === "EQUIPMENT_RENT";
+          }
+          return cat === statementExpenseCategoryFilter;
+        }
+        return false;
+      });
     }
     if (statementSearch.trim()) {
       const q = statementSearch.toLowerCase().trim();
@@ -629,6 +646,7 @@ export default function SitesPage() {
     statementTypeFilter,
     statementVendorFilter,
     statementWorkerFilter,
+    statementExpenseCategoryFilter,
     statementSearch,
   ]);
 
@@ -671,6 +689,7 @@ export default function SitesPage() {
     statementTypeFilter,
     statementVendorFilter,
     statementWorkerFilter,
+    statementExpenseCategoryFilter,
     statementSearch,
     startDate,
     endDate,
@@ -1415,7 +1434,7 @@ export default function SitesPage() {
                   Filters:
                 </span>
 
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+                <div className="grid grid-cols-1 sm:flex sm:flex-wrap sm:items-center gap-2 w-full sm:w-auto">
                   {/* Vendor Filter Dropdown */}
                   <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-amber-50/80 border border-amber-200 rounded-lg px-2.5 py-1.5 sm:py-1 w-full sm:w-auto shadow-2xs">
                     <div className="flex items-center gap-1.5 min-w-0 flex-1 sm:flex-none">
@@ -1493,14 +1512,55 @@ export default function SitesPage() {
                       </button>
                     )}
                   </div>
+
+                  {/* Expense Category Filter Dropdown */}
+                  <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-purple-50/80 border border-purple-200 rounded-lg px-2.5 py-1.5 sm:py-1 w-full sm:w-auto shadow-2xs">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1 sm:flex-none">
+                      <Receipt className="h-3.5 w-3.5 text-purple-700 shrink-0" />
+                      <span className="text-purple-800 font-semibold text-[11px] shrink-0">Expense:</span>
+                      <select
+                        value={statementExpenseCategoryFilter}
+                        onChange={(e) => {
+                          setStatementExpenseCategoryFilter(e.target.value);
+                          setStatementPage(1);
+                        }}
+                        className="bg-transparent text-xs font-bold text-purple-950 focus:outline-none cursor-pointer w-full sm:max-w-[170px] truncate pr-1"
+                      >
+                        <option value="ALL">All Expenses ({allSiteMiscExpenses.length})</option>
+                        <option value="OUTSIDE_LABOR">👷 Outside Labour Wages</option>
+                        <option value="PETROL_FUEL">⛽ Company Petrol &amp; Fuel</option>
+                        <option value="FOOD_TEA_REFRESHMENTS">🍵 Worker Mess &amp; Tea</option>
+                        <option value="ROOM_RENT">🏠 Room &amp; Camp Rent</option>
+                        <option value="MACHINERY_RENT">🚜 Machinery &amp; Equipment</option>
+                        <option value="OFFICE_OVERHEAD">🏢 Office Overhead</option>
+                        <option value="SITE_PERMIT_FEES">📄 Permit &amp; Municipal Fees</option>
+                        <option value="SALARY_ADVANCE">💵 Salaried Worker Advance</option>
+                        <option value="MISCELLANEOUS">📦 Other Miscellaneous</option>
+                      </select>
+                    </div>
+                    {statementExpenseCategoryFilter !== "ALL" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStatementExpenseCategoryFilter("ALL");
+                          setStatementPage(1);
+                        }}
+                        className="ml-1 text-slate-400 hover:text-rose-600 font-bold text-[10px] shrink-0 cursor-pointer"
+                        title="Clear expense filter"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {(statementVendorFilter !== "ALL" || statementWorkerFilter !== "ALL") && (
+                {(statementVendorFilter !== "ALL" || statementWorkerFilter !== "ALL" || statementExpenseCategoryFilter !== "ALL") && (
                   <button
                     type="button"
                     onClick={() => {
                       setStatementVendorFilter("ALL");
                       setStatementWorkerFilter("ALL");
+                      setStatementExpenseCategoryFilter("ALL");
                       setStatementPage(1);
                     }}
                     className="text-[11px] text-rose-600 hover:text-rose-800 hover:underline font-semibold sm:ml-1 cursor-pointer w-full sm:w-auto text-center"
