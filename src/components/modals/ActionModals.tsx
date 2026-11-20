@@ -103,7 +103,7 @@ export function ActionModals({
   const [incomeSiteId, setIncomeSiteId] = useState(defaultSiteId || "");
   const [incomeDate, setIncomeDate] = useState("");
   const [incomeAmount, setIncomeAmount] = useState("");
-  const [incomeMode, setIncomeMode] = useState<PaymentMode>("BANK_TRANSFER");
+  const [incomeMode, setIncomeMode] = useState<PaymentMode>("CASH");
   const [incomeReceivedFrom, setIncomeReceivedFrom] = useState("");
   const [incomeRefNo, setIncomeRefNo] = useState("");
   const [incomeNotes, setIncomeNotes] = useState("");
@@ -226,6 +226,7 @@ export function ActionModals({
       notes: payVendorNotes || undefined,
     });
     setPayVendorAmount("");
+    setPayVendorMode("CASH");
     setPayVendorVoucher("");
     setPayVendorNotes("");
     setPayVendorDate(getTodayDate());
@@ -245,6 +246,7 @@ export function ActionModals({
       notes: payWorkerNotes || undefined,
     });
     setPayWorkerAmount("");
+    setPayWorkerMode("CASH");
     setPayWorkerVoucher("");
     setPayWorkerNotes("");
     setPayWorkerDate(getTodayDate());
@@ -266,6 +268,7 @@ export function ActionModals({
       notes: incomeNotes || undefined,
     });
     setIncomeAmount("");
+    setIncomeMode("CASH");
     setIncomeReceivedFrom("");
     setIncomeRefNo("");
     setIncomeNotes("");
@@ -287,6 +290,7 @@ export function ActionModals({
       notes: expenseNotes || undefined,
     });
     setExpenseAmount("");
+    setExpenseMode("CASH");
     setExpenseVoucher("");
     setExpenseNotes("");
     setExpenseDate(getTodayDate());
@@ -823,10 +827,10 @@ export function ActionModals({
                   onChange={(e) => setIncomeMode(e.target.value as PaymentMode)}
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                 >
+                  <option value="CASH">Cash</option>
                   <option value="BANK_TRANSFER">Bank Transfer (NEFT/RTGS)</option>
                   <option value="CHEQUE">Cheque</option>
                   <option value="UPI">UPI</option>
-                  <option value="CASH">Cash</option>
                 </select>
               </div>
               <div>

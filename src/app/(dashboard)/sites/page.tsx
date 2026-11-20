@@ -518,7 +518,7 @@ export default function SitesPage() {
       setEditEntryPaymentMode(entry.rawRecord?.paymentMode || "CASH");
     } else if (entry.type === "INCOME") {
       setEditEntryReceivedFrom(entry.rawRecord?.receivedFrom || "");
-      setEditEntryPaymentMode(entry.rawRecord?.paymentMode || "BANK_TRANSFER");
+      setEditEntryPaymentMode(entry.rawRecord?.paymentMode || "CASH");
       setEditEntryVoucherNo(entry.rawRecord?.referenceNo || "");
     }
   };
@@ -2167,9 +2167,9 @@ export default function SitesPage() {
                   onChange={(e) => setEditEntryPaymentMode(e.target.value as PaymentMode)}
                   className="w-full h-10 px-3 text-sm rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                 >
+                  <option value="CASH">Cash in Hand</option>
                   <option value="BANK_TRANSFER">Bank Transfer (NEFT/RTGS)</option>
                   <option value="CHEQUE">Cheque</option>
-                  <option value="CASH">Cash in Hand</option>
                   <option value="UPI">UPI / Online</option>
                 </select>
               </div>

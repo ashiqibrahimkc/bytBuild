@@ -142,7 +142,7 @@ export default function CompanyExpensesPage() {
   const [category, setCategory] = useState<ExpenseCategory>("ROOM_RENT");
   const [siteId, setSiteId] = useState<string>("");
   const [workerId, setWorkerId] = useState<string>("");
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>("BANK_TRANSFER");
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>("CASH");
   const [voucherNo, setVoucherNo] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -212,6 +212,7 @@ export default function CompanyExpensesPage() {
     setWorkerId("");
     setVoucherNo("");
     setNotes("");
+    setPaymentMode("CASH");
     setExpenseDate(new Date().toISOString().split("T")[0]);
     setIsAddOpen(false);
   };
@@ -891,9 +892,10 @@ export default function CompanyExpensesPage() {
                 onChange={(e) => setPaymentMode(e.target.value as PaymentMode)}
                 className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-hidden"
               >
+                <option value="CASH">Cash</option>
+                <option value="CASH">Physical Cash</option>
                 <option value="BANK_TRANSFER">Bank Transfer / NEFT</option>
                 <option value="UPI">UPI / GPay / PhonePe</option>
-                <option value="CASH">Physical Cash</option>
                 <option value="CHEQUE">Cheque</option>
               </select>
             </div>

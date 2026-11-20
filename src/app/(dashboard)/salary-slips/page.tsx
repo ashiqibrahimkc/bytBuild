@@ -170,7 +170,7 @@ function SalarySlipsContent() {
   const [viewingSlip, setViewingSlip] = useState<SalarySlip | null>(null);
 
   // Slip Form Inputs
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>("BANK_TRANSFER");
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>("CASH");
   const [paymentDate, setPaymentDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
@@ -269,7 +269,7 @@ function SalarySlipsContent() {
   const handleOpenGenerate = (worker: Worker) => {
     setFormError(null);
     setGeneratingWorker(worker);
-    setPaymentMode("BANK_TRANSFER");
+    setPaymentMode("CASH");
     setPaymentDate(new Date().toISOString().split("T")[0]);
     setVoucherNo(`SAL-${selectedMonth.replace("-", "")}-${Math.floor(100 + Math.random() * 900)}`);
     setNotes(`Monthly Salary for ${selectedMonthLabel}`);
@@ -859,9 +859,9 @@ function SalarySlipsContent() {
                       onChange={(e) => setPaymentMode(e.target.value as PaymentMode)}
                       className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 font-medium focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                     >
+                      <option value="CASH">Cash Disbursement</option>
                       <option value="BANK_TRANSFER">Bank Transfer (NEFT/IMPS/RTGS)</option>
                       <option value="UPI">UPI / GPay / PhonePe</option>
-                      <option value="CASH">Cash Disbursement</option>
                       <option value="CHEQUE">Bank Cheque</option>
                     </select>
                   </div>
